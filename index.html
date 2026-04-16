@@ -1,0 +1,1025 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Scout Radar — Daily Founder Scouting</title>
+<style>
+  :root {
+    --bg: #09090b;
+    --surface: #18181b;
+    --surface2: #27272a;
+    --surface3: #3f3f46;
+    --border: #27272a;
+    --border2: #3f3f46;
+    --text: #fafafa;
+    --text2: #a1a1aa;
+    --text3: #71717a;
+    --accent: #7c3aed;
+    --accent2: #a78bfa;
+    --accent-bg: rgba(124,58,237,0.12);
+    --green: #22c55e;
+    --green-bg: rgba(34,197,94,0.12);
+    --yellow: #eab308;
+    --yellow-bg: rgba(234,179,8,0.12);
+    --red: #ef4444;
+    --red-bg: rgba(239,68,68,0.12);
+    --blue: #3b82f6;
+    --blue-bg: rgba(59,130,246,0.12);
+    --orange: #f97316;
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); min-height:100vh; }
+
+  /* Layout */
+  .app { max-width: 1440px; margin: 0 auto; }
+
+  /* Header */
+  .header {
+    padding: 20px 28px;
+    border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: space-between;
+    position: sticky; top: 0; z-index: 100;
+    background: var(--bg); backdrop-filter: blur(12px);
+  }
+  .logo { display: flex; align-items: center; gap: 10px; }
+  .logo svg { width: 28px; height: 28px; }
+  .logo h1 { font-size: 18px; font-weight: 700; letter-spacing: -0.3px; }
+  .logo h1 span { color: var(--accent2); }
+  .header-stats { display: flex; gap: 8px; align-items: center; }
+  .stat-pill {
+    padding: 5px 12px; border-radius: 20px; font-size: 12px; font-weight: 500;
+    display: flex; align-items: center; gap: 5px;
+  }
+  .stat-pill .dot { width: 6px; height: 6px; border-radius: 50%; }
+  .stat-gh { background: var(--surface2); color: var(--text2); }
+  .stat-gh .dot { background: var(--blue); }
+  .stat-hn { background: var(--surface2); color: var(--text2); }
+  .stat-hn .dot { background: var(--orange); }
+  .stat-total { background: var(--accent-bg); color: var(--accent2); font-weight: 600; }
+
+  /* Token bar */
+  .token-bar {
+    padding: 10px 28px;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; gap: 12px; font-size: 13px;
+  }
+  .token-bar label { color: var(--text2); white-space: nowrap; }
+  .token-input {
+    flex: 1; max-width: 420px;
+    background: var(--bg); border: 1px solid var(--border2); color: var(--text);
+    padding: 7px 12px; border-radius: 6px; font-size: 13px; font-family: 'SF Mono', monospace;
+  }
+  .token-input:focus { outline: none; border-color: var(--accent); }
+  .token-status { font-size: 12px; }
+  .token-status.ok { color: var(--green); }
+  .token-status.limited { color: var(--yellow); }
+  .token-help { color: var(--text3); font-size: 12px; }
+  .token-help a { color: var(--accent2); text-decoration: none; }
+  .token-help a:hover { text-decoration: underline; }
+
+  /* Config panel */
+  .config-wrap {
+    padding: 16px 28px;
+    border-bottom: 1px solid var(--border);
+  }
+  .config-toggle {
+    display: flex; align-items: center; gap: 8px;
+    cursor: pointer; font-size: 13px; color: var(--text2); font-weight: 500;
+    background: none; border: none; padding: 0;
+  }
+  .config-toggle:hover { color: var(--text); }
+  .config-toggle svg { transition: transform 0.2s; }
+  .config-toggle.open svg { transform: rotate(90deg); }
+  .config-body { display: none; padding-top: 16px; }
+  .config-body.show { display: block; }
+  .config-grid {
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 14px;
+  }
+  .cfg-field label {
+    display: block; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px;
+    color: var(--text3); margin-bottom: 5px; font-weight: 600;
+  }
+  .cfg-field input, .cfg-field textarea {
+    width: 100%; background: var(--bg); border: 1px solid var(--border2); color: var(--text);
+    padding: 8px 12px; border-radius: 6px; font-size: 13px;
+  }
+  .cfg-field textarea { resize: vertical; min-height: 60px; font-family: inherit; }
+  .cfg-field input:focus, .cfg-field textarea:focus { outline: none; border-color: var(--accent); }
+  .cfg-hint { font-size: 11px; color: var(--text3); margin-top: 3px; }
+  .cfg-actions { display: flex; gap: 8px; margin-top: 14px; }
+
+  /* Toolbar */
+  .toolbar {
+    padding: 14px 28px;
+    display: flex; align-items: center; gap: 10px;
+    border-bottom: 1px solid var(--border);
+    flex-wrap: wrap;
+  }
+  .btn {
+    padding: 8px 16px; border-radius: 6px; border: none; cursor: pointer;
+    font-size: 13px; font-weight: 600; transition: all 0.15s;
+    display: inline-flex; align-items: center; gap: 6px;
+  }
+  .btn-scan {
+    background: var(--accent); color: white;
+    padding: 8px 22px;
+  }
+  .btn-scan:hover { background: #6d28d9; }
+  .btn-scan:disabled { opacity: 0.5; cursor: not-allowed; }
+  .btn-ghost {
+    background: transparent; color: var(--text2);
+    border: 1px solid var(--border2);
+  }
+  .btn-ghost:hover { border-color: var(--text3); color: var(--text); }
+  .btn-ghost.active { border-color: var(--accent); color: var(--accent2); background: var(--accent-bg); }
+  .toolbar-sep { width: 1px; height: 24px; background: var(--border2); margin: 0 4px; }
+  .filter-input {
+    background: var(--surface); border: 1px solid var(--border2); color: var(--text);
+    padding: 8px 14px; border-radius: 6px; font-size: 13px; width: 240px;
+  }
+  .filter-input:focus { outline: none; border-color: var(--accent); }
+  .filter-input::placeholder { color: var(--text3); }
+  .toolbar-right { margin-left: auto; display: flex; align-items: center; gap: 8px; }
+  .showing-label { font-size: 12px; color: var(--text3); }
+
+  /* Progress */
+  .progress-wrap { padding: 0 28px; overflow: hidden; max-height: 0; transition: max-height 0.3s; }
+  .progress-wrap.active { max-height: 60px; }
+  .progress-inner { padding: 10px 0; }
+  .progress-text { font-size: 12px; color: var(--text2); margin-bottom: 4px; }
+  .progress-track { height: 3px; background: var(--surface2); border-radius: 2px; overflow: hidden; }
+  .progress-fill { height: 100%; background: linear-gradient(90deg, var(--accent), var(--green)); transition: width 0.3s; }
+
+  /* Results grid — card layout */
+  .results { padding: 16px 28px; }
+
+  .card-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+    gap: 12px;
+  }
+  .card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 10px; padding: 16px; transition: border-color 0.15s;
+    position: relative;
+  }
+  .card:hover { border-color: var(--border2); }
+  .card.is-new { border-left: 3px solid var(--green); }
+  .card-top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px; }
+  .card-identity h3 { font-size: 14px; font-weight: 600; margin-bottom: 2px; }
+  .card-identity .username { font-size: 12px; color: var(--text3); }
+  .card-score {
+    width: 44px; height: 44px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 14px; font-weight: 700; flex-shrink: 0;
+  }
+  .score-high { background: var(--green-bg); color: var(--green); }
+  .score-med { background: var(--yellow-bg); color: var(--yellow); }
+  .score-low { background: var(--red-bg); color: var(--red); }
+
+  .card-company { font-size: 13px; color: var(--text); margin-bottom: 6px; font-weight: 500; }
+  .card-bio { font-size: 12px; color: var(--text2); line-height: 1.5; margin-bottom: 10px; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+  .card-meta { display: flex; align-items: center; gap: 12px; font-size: 12px; color: var(--text3); margin-bottom: 10px; }
+  .card-meta span { display: flex; align-items: center; gap: 4px; }
+
+  .signal-tags { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 10px; }
+  .signal-tag {
+    padding: 2px 8px; border-radius: 4px; font-size: 10px; font-weight: 600;
+    text-transform: uppercase; letter-spacing: 0.3px;
+  }
+  .tag-founder { background: var(--accent-bg); color: var(--accent2); }
+  .tag-ai { background: var(--blue-bg); color: var(--blue); }
+  .tag-stealth { background: var(--green-bg); color: var(--green); }
+  .tag-building { background: rgba(249,115,22,0.12); color: var(--orange); }
+  .tag-shipped { background: var(--green-bg); color: var(--green); }
+  .tag-bg { background: var(--yellow-bg); color: var(--yellow); }
+  .tag-hn { background: rgba(249,115,22,0.12); color: var(--orange); }
+  .tag-default { background: var(--surface2); color: var(--text3); }
+
+  .card-source {
+    display: inline-flex; align-items: center; gap: 4px;
+    font-size: 11px; font-weight: 600; text-transform: uppercase;
+    padding: 3px 8px; border-radius: 4px;
+  }
+  .src-github { background: var(--blue-bg); color: var(--blue); }
+  .src-hn { background: rgba(249,115,22,0.12); color: var(--orange); }
+
+  .card-bottom { display: flex; justify-content: space-between; align-items: center; }
+  .card-link {
+    font-size: 12px; color: var(--accent2); text-decoration: none;
+    font-weight: 500; display: flex; align-items: center; gap: 4px;
+  }
+  .card-link:hover { text-decoration: underline; }
+  .new-badge {
+    font-size: 10px; font-weight: 700; text-transform: uppercase;
+    color: var(--green); letter-spacing: 0.5px;
+  }
+
+  /* Empty state */
+  .empty-state {
+    text-align: center; padding: 80px 20px; color: var(--text2);
+  }
+  .empty-state h3 { font-size: 16px; color: var(--text); margin-bottom: 6px; }
+  .empty-state p { font-size: 14px; max-width: 420px; margin: 0 auto; line-height: 1.6; }
+
+  /* Scanning animation */
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.5} }
+  .scanning { animation: pulse 1.5s infinite; }
+
+  /* Responsive */
+  @media (max-width: 768px) {
+    .card-grid { grid-template-columns: 1fr; }
+    .toolbar { gap: 8px; }
+    .filter-input { width: 100%; }
+    .toolbar-right { margin-left: 0; width: 100%; }
+    .config-grid { grid-template-columns: 1fr; }
+  }
+
+  /* Scrollbar */
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: var(--bg); }
+  ::-webkit-scrollbar-thumb { background: var(--surface3); border-radius: 3px; }
+
+  /* Table view */
+  .table-wrap { overflow-x: auto; }
+  .table-wrap table { width: 100%; border-collapse: collapse; }
+  .table-wrap thead th {
+    text-align: left; padding: 10px 12px; font-size: 11px;
+    text-transform: uppercase; letter-spacing: 0.5px; color: var(--text3);
+    border-bottom: 1px solid var(--border); background: var(--surface);
+    position: sticky; top: 0; cursor: pointer; user-select: none; font-weight: 600;
+  }
+  .table-wrap thead th:hover { color: var(--accent2); }
+  .table-wrap tbody td {
+    padding: 10px 12px; border-bottom: 1px solid var(--border); font-size: 13px; vertical-align: top;
+  }
+  .table-wrap tbody tr:hover { background: var(--surface); }
+  .table-wrap a { color: var(--accent2); text-decoration: none; }
+  .table-wrap a:hover { text-decoration: underline; }
+</style>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+<div class="app">
+
+  <!-- Header -->
+  <div class="header">
+    <div class="logo">
+      <svg viewBox="0 0 28 28" fill="none"><circle cx="14" cy="14" r="13" stroke="#7c3aed" stroke-width="2"/><circle cx="14" cy="14" r="5" fill="#7c3aed"/><line x1="14" y1="1" x2="14" y2="8" stroke="#7c3aed" stroke-width="2" stroke-linecap="round"/><line x1="14" y1="20" x2="14" y2="27" stroke="#7c3aed" stroke-width="2" stroke-linecap="round"/><line x1="1" y1="14" x2="8" y2="14" stroke="#7c3aed" stroke-width="2" stroke-linecap="round"/><line x1="20" y1="14" x2="27" y2="14" stroke="#7c3aed" stroke-width="2" stroke-linecap="round"/></svg>
+      <h1><span>Scout</span> Radar</h1>
+    </div>
+    <div class="header-stats">
+      <div class="stat-pill stat-gh"><span class="dot"></span> GitHub: <strong id="gh-count">0</strong></div>
+      <div class="stat-pill stat-hn"><span class="dot"></span> HN: <strong id="hn-count">0</strong></div>
+      <div class="stat-pill stat-total">Top <strong id="total-count">50</strong></div>
+    </div>
+  </div>
+
+  <!-- Token bar -->
+  <div class="token-bar">
+    <label>GitHub Token</label>
+    <input class="token-input" type="password" id="gh-token" placeholder="ghp_xxxx... (optional — boosts rate from 60 to 5,000 req/hr)" autocomplete="off">
+    <span class="token-status" id="token-status"></span>
+    <span class="token-help">
+      <a href="https://github.com/settings/tokens/new?description=ScoutRadar&scopes=read:user" target="_blank">Generate token →</a>
+      (read:user scope only)
+    </span>
+  </div>
+
+  <!-- Filters config -->
+  <div class="config-wrap">
+    <button class="config-toggle" id="config-toggle" onclick="toggleConfig()">
+      <svg width="12" height="12" viewBox="0 0 12 12"><path d="M4 1L9 6L4 11" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round"/></svg>
+      Scouting Filters
+      <span style="font-weight:400;color:var(--text3)">(click to customize)</span>
+    </button>
+    <div class="config-body" id="config-body">
+      <div class="config-grid">
+        <div class="cfg-field">
+          <label>Location</label>
+          <input type="text" id="cfg-location" value="India" placeholder="e.g. India, Bangalore, Delhi">
+          <div class="cfg-hint">GitHub profile location filter</div>
+        </div>
+        <div class="cfg-field">
+          <label>Bio Keywords</label>
+          <textarea id="cfg-bio-keywords">founder, building, stealth, co-founder, CEO, CTO, shipped, launched, bootstrapped</textarea>
+          <div class="cfg-hint">Comma-separated. Paired with location to search GitHub bios</div>
+        </div>
+        <div class="cfg-field">
+          <label>Min GitHub Followers</label>
+          <input type="number" id="cfg-min-followers" value="10" min="0">
+        </div>
+        <div class="cfg-field">
+          <label>HN Search Queries</label>
+          <textarea id="cfg-hn-keywords">Show HN AI India, Show HN India startup, Show HN Bangalore, Show HN Indian, Show HN Mumbai</textarea>
+          <div class="cfg-hint">Comma-separated HN search queries</div>
+        </div>
+        <div class="cfg-field">
+          <label>HN Min Points</label>
+          <input type="number" id="cfg-hn-points" value="1" min="0">
+        </div>
+        <div class="cfg-field">
+          <label>Exclude Keywords</label>
+          <textarea id="cfg-exclude">raised, series A, series B, funded, $M, VC-backed, YC W, YC S</textarea>
+          <div class="cfg-hint">Profiles matching these get score penalty (-20 each)</div>
+        </div>
+        <div class="cfg-field">
+          <label>Top N Results</label>
+          <input type="number" id="cfg-top-n" value="50" min="10" max="200">
+          <div class="cfg-hint">Show only top N scored profiles</div>
+        </div>
+        <div class="cfg-field">
+          <label>Strong Background Keywords</label>
+          <textarea id="cfg-strong-bg">IIT, IISC, BITS, NIT, ex-Google, ex-Amazon, ex-Microsoft, ex-Flipkart, ex-Razorpay, ex-Uber, FAANG, Stanford, MIT, Berkeley</textarea>
+          <div class="cfg-hint">Profiles matching these get +15 score boost each</div>
+        </div>
+      </div>
+      <div class="cfg-actions">
+        <button class="btn btn-ghost" onclick="saveConfig()">Save Filters</button>
+        <button class="btn btn-ghost" onclick="resetConfig()">Reset to Default</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toolbar -->
+  <div class="toolbar">
+    <button class="btn btn-scan" id="scan-btn" onclick="startScan()">
+      <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><circle cx="6" cy="6" r="5" stroke="white" stroke-width="1.5"/><line x1="10" y1="10" x2="13" y2="13" stroke="white" stroke-width="1.5" stroke-linecap="round"/></svg>
+      Scan Now
+    </button>
+    <div class="toolbar-sep"></div>
+    <button class="btn btn-ghost active" data-source="all" onclick="setSource('all',this)">All</button>
+    <button class="btn btn-ghost" data-source="github" onclick="setSource('github',this)">GitHub</button>
+    <button class="btn btn-ghost" data-source="hn" onclick="setSource('hn',this)">HN</button>
+    <div class="toolbar-sep"></div>
+    <button class="btn btn-ghost" id="view-cards" onclick="setView('cards')" style="border-color:var(--accent);color:var(--accent2);">Cards</button>
+    <button class="btn btn-ghost" id="view-table" onclick="setView('table')">Table</button>
+    <div class="toolbar-right">
+      <input class="filter-input" type="text" placeholder="Search name, company, keyword..." oninput="filterText(this.value)" id="filter-input">
+      <button class="btn btn-ghost" onclick="exportCSV()">Export CSV</button>
+    </div>
+  </div>
+
+  <!-- Progress -->
+  <div class="progress-wrap" id="progress-wrap">
+    <div class="progress-inner">
+      <div class="progress-text" id="progress-text">Ready</div>
+      <div class="progress-track"><div class="progress-fill" id="progress-fill" style="width:0%"></div></div>
+    </div>
+  </div>
+
+  <!-- Results -->
+  <div class="results" id="results-area">
+    <div class="empty-state" id="empty-state">
+      <h3>Ready to scout</h3>
+      <p>Add your GitHub token above for best results (5,000 API calls/hr vs 60), tweak the filters, and hit Scan Now.</p>
+    </div>
+    <div class="card-grid" id="card-grid" style="display:none"></div>
+    <div class="table-wrap" id="table-wrap" style="display:none">
+      <table>
+        <thead><tr>
+          <th onclick="sortBy('score')">Score</th>
+          <th onclick="sortBy('source')">Source</th>
+          <th onclick="sortBy('name')">Name</th>
+          <th onclick="sortBy('company')">Company</th>
+          <th>Bio</th>
+          <th onclick="sortBy('followers')">Followers</th>
+          <th>Signals</th>
+          <th>Link</th>
+        </tr></thead>
+        <tbody id="table-body"></tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+
+<script>
+// ===================== STATE =====================
+let allResults = [];
+let filteredResults = [];
+let currentSource = 'all';
+let currentQuery = '';
+let sortField = 'score';
+let sortDir = -1;
+let viewMode = 'cards';
+let seenProfiles = {};  // username -> timestamp
+let isScanning = false;
+
+// ===================== CONFIG =====================
+const DEFAULT_CONFIG = {
+  location: 'India',
+  bioKeywords: 'founder, building, stealth, co-founder, CEO, CTO, shipped, launched, bootstrapped',
+  minFollowers: 10,
+  hnKeywords: 'Show HN AI India, Show HN India startup, Show HN Bangalore, Show HN Indian, Show HN Mumbai',
+  hnMinPoints: 1,
+  exclude: 'raised, series A, series B, funded, $M, VC-backed, YC W, YC S',
+  topN: 50,
+  strongBg: 'IIT, IISC, BITS, NIT, ex-Google, ex-Amazon, ex-Microsoft, ex-Flipkart, ex-Razorpay, ex-Uber, FAANG, Stanford, MIT, Berkeley'
+};
+
+function loadConfig() {
+  try {
+    const saved = localStorage.getItem('scout_config');
+    if (saved) {
+      const cfg = JSON.parse(saved);
+      document.getElementById('cfg-location').value = cfg.location || DEFAULT_CONFIG.location;
+      document.getElementById('cfg-bio-keywords').value = cfg.bioKeywords || DEFAULT_CONFIG.bioKeywords;
+      document.getElementById('cfg-min-followers').value = cfg.minFollowers ?? DEFAULT_CONFIG.minFollowers;
+      document.getElementById('cfg-hn-keywords').value = cfg.hnKeywords || DEFAULT_CONFIG.hnKeywords;
+      document.getElementById('cfg-hn-points').value = cfg.hnMinPoints ?? DEFAULT_CONFIG.hnMinPoints;
+      document.getElementById('cfg-exclude').value = cfg.exclude || DEFAULT_CONFIG.exclude;
+      document.getElementById('cfg-top-n').value = cfg.topN ?? DEFAULT_CONFIG.topN;
+      document.getElementById('cfg-strong-bg').value = cfg.strongBg || DEFAULT_CONFIG.strongBg;
+    }
+  } catch(e) {}
+
+  // Load token
+  try {
+    const tok = localStorage.getItem('scout_gh_token');
+    if (tok) {
+      document.getElementById('gh-token').value = tok;
+      updateTokenStatus();
+    }
+  } catch(e) {}
+
+  // Load seen profiles
+  try {
+    const s = localStorage.getItem('scout_seen');
+    if (s) seenProfiles = JSON.parse(s);
+  } catch(e) {}
+}
+
+function getConfig() {
+  return {
+    location: document.getElementById('cfg-location').value.trim(),
+    bioKeywords: document.getElementById('cfg-bio-keywords').value.trim(),
+    minFollowers: parseInt(document.getElementById('cfg-min-followers').value) || 0,
+    hnKeywords: document.getElementById('cfg-hn-keywords').value.trim(),
+    hnMinPoints: parseInt(document.getElementById('cfg-hn-points').value) || 0,
+    exclude: document.getElementById('cfg-exclude').value.trim(),
+    topN: parseInt(document.getElementById('cfg-top-n').value) || 50,
+    strongBg: document.getElementById('cfg-strong-bg').value.trim()
+  };
+}
+
+function saveConfig() {
+  const cfg = getConfig();
+  localStorage.setItem('scout_config', JSON.stringify(cfg));
+  // Save token separately
+  const tok = document.getElementById('gh-token').value.trim();
+  if (tok) localStorage.setItem('scout_gh_token', tok);
+  else localStorage.removeItem('scout_gh_token');
+  showToast('Filters saved');
+}
+
+function resetConfig() {
+  document.getElementById('cfg-location').value = DEFAULT_CONFIG.location;
+  document.getElementById('cfg-bio-keywords').value = DEFAULT_CONFIG.bioKeywords;
+  document.getElementById('cfg-min-followers').value = DEFAULT_CONFIG.minFollowers;
+  document.getElementById('cfg-hn-keywords').value = DEFAULT_CONFIG.hnKeywords;
+  document.getElementById('cfg-hn-points').value = DEFAULT_CONFIG.hnMinPoints;
+  document.getElementById('cfg-exclude').value = DEFAULT_CONFIG.exclude;
+  document.getElementById('cfg-top-n').value = DEFAULT_CONFIG.topN;
+  document.getElementById('cfg-strong-bg').value = DEFAULT_CONFIG.strongBg;
+  localStorage.removeItem('scout_config');
+  showToast('Filters reset to defaults');
+}
+
+// ===================== TOKEN =====================
+document.getElementById('gh-token').addEventListener('input', () => {
+  updateTokenStatus();
+  const tok = document.getElementById('gh-token').value.trim();
+  if (tok) localStorage.setItem('scout_gh_token', tok);
+  else localStorage.removeItem('scout_gh_token');
+});
+
+function updateTokenStatus() {
+  const tok = document.getElementById('gh-token').value.trim();
+  const el = document.getElementById('token-status');
+  if (tok && (tok.startsWith('ghp_') || tok.startsWith('github_pat_'))) {
+    el.textContent = '5,000 req/hr';
+    el.className = 'token-status ok';
+  } else if (tok) {
+    el.textContent = 'Token format unrecognized';
+    el.className = 'token-status limited';
+  } else {
+    el.textContent = '60 req/hr (no token)';
+    el.className = 'token-status limited';
+  }
+}
+
+function getGHHeaders() {
+  const h = { 'Accept': 'application/vnd.github.v3+json' };
+  const tok = document.getElementById('gh-token').value.trim();
+  if (tok) h['Authorization'] = `Bearer ${tok}`;
+  return h;
+}
+
+// ===================== SCORING =====================
+function parseList(str) {
+  return str.split(',').map(s => s.trim().toLowerCase()).filter(Boolean);
+}
+
+function scoreProfile(profile, cfg) {
+  let score = 0;
+  const text = ((profile.bio || '') + ' ' + (profile.company || '')).toLowerCase();
+  const icpKw = parseList(cfg.bioKeywords);
+  const fundedKw = parseList(cfg.exclude);
+  const strongBg = parseList(cfg.strongBg);
+
+  icpKw.forEach(kw => { if (text.includes(kw)) score += 10; });
+  strongBg.forEach(kw => { if (text.includes(kw)) score += 15; });
+  fundedKw.forEach(kw => { if (text.includes(kw)) score -= 20; });
+
+  if (profile.followers > 0) score += Math.min(Math.log10(profile.followers) * 8, 25);
+  if (profile.repos > 20) score += 5;
+  if (profile.repos > 50) score += 5;
+
+  if (profile.source === 'hn' && profile.points) score += Math.min(profile.points / 5, 20);
+  if (profile.created && new Date(profile.created) > new Date('2024-01-01')) score += 10;
+
+  if (text.match(/\bai\b/)) score += 8;
+  if (text.match(/\bagent/)) score += 5;
+  if (text.match(/\bsaas\b/)) score += 5;
+
+  return Math.max(0, Math.min(100, Math.round(score)));
+}
+
+function extractSignals(profile, cfg) {
+  const signals = [];
+  const text = ((profile.bio || '') + ' ' + (profile.company || '')).toLowerCase();
+  const strongBg = parseList(cfg.strongBg);
+
+  if (text.match(/\bfounder\b/)) signals.push('Founder');
+  if (text.includes('stealth')) signals.push('Stealth');
+  if (text.match(/\bbuilding\b/)) signals.push('Building');
+  if (text.match(/\bcto\b/) || text.match(/\bceo\b/)) signals.push('C-Level');
+  if (text.includes('bootstrapped')) signals.push('Bootstrapped');
+  if (text.match(/\bai\b/i)) signals.push('AI');
+  if (text.match(/\bagent/)) signals.push('Agents');
+  if (text.includes('shipped') || text.includes('launched')) signals.push('Shipped');
+  if (text.match(/\bsaas\b/i)) signals.push('SaaS');
+
+  strongBg.forEach(kw => { if (text.includes(kw)) signals.push(kw.replace(/^ex-/i, '').toUpperCase()); });
+
+  if (profile.source === 'hn') {
+    signals.push('Show HN');
+    if (profile.points > 50) signals.push('HN Popular');
+  }
+
+  return [...new Set(signals)];
+}
+
+// ===================== GITHUB SEARCH =====================
+async function searchGitHub(cfg) {
+  const results = [];
+  const keywords = parseList(cfg.bioKeywords);
+  const location = cfg.location;
+  const minFollowers = cfg.minFollowers;
+  const headers = getGHHeaders();
+  const hasToken = !!document.getElementById('gh-token').value.trim();
+
+  // Build diverse queries — rotate keyword pairs and add date windowing
+  const queries = new Set();
+
+  // Core paired queries
+  for (let i = 0; i < keywords.length; i += 2) {
+    const pair = keywords.slice(i, i + 2).map(k => `"${k}"`).join('+');
+    queries.add(`location:${location}+type:user+${pair}`);
+  }
+
+  // AI-specific queries
+  queries.add(`location:${location}+type:user+"founder"+"AI"`);
+  queries.add(`location:${location}+type:user+"building"+"AI"`);
+  queries.add(`location:${location}+type:user+"stealth"+"AI"`);
+  queries.add(`location:${location}+type:user+"CTO"+OR+"CEO"+"startup"`);
+  queries.add(`location:${location}+type:user+"launched"+"AI"`);
+  queries.add(`location:${location}+type:user+"bootstrapped"`);
+
+  // Date-rotated queries — focus on recently created accounts
+  const now = new Date();
+  const threeMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 3, 1).toISOString().split('T')[0];
+  queries.add(`location:${location}+type:user+"founder"+created:>${threeMonthsAgo}`);
+  queries.add(`location:${location}+type:user+"building"+created:>${threeMonthsAgo}`);
+
+  // Daily rotation: add a query based on day of week for variety
+  const dayKeywords = [
+    ['"SaaS"', '"founder"'], ['"agent"', '"AI"'], ['"stealth"', '"startup"'],
+    ['"shipped"', '"product"'], ['"launched"', '"AI"'], ['"pre-seed"', '"founder"'],
+    ['"indie"', '"hacker"']
+  ];
+  const todayKws = dayKeywords[now.getDay()];
+  queries.add(`location:${location}+type:user+${todayKws[0]}+${todayKws[1]}`);
+
+  const queryList = [...queries];
+  const seen = new Set();
+  const perPage = hasToken ? 30 : 20; // Fetch more with token
+  const delayBetweenSearch = hasToken ? 2200 : 6500;
+  const delayBetweenProfile = hasToken ? 200 : 800;
+
+  for (let i = 0; i < queryList.length; i++) {
+    if (!isScanning) break;
+    updateProgress(`GitHub: Query ${i+1}/${queryList.length}`, ((i+1)/queryList.length) * 50);
+
+    try {
+      const resp = await fetch(
+        `https://api.github.com/search/users?q=${queryList[i]}&per_page=${perPage}&sort=followers&order=desc`,
+        { headers }
+      );
+
+      if (resp.status === 403 || resp.status === 429) {
+        const reset = resp.headers.get('x-ratelimit-reset');
+        const wait = reset ? Math.max(0, (parseInt(reset) * 1000) - Date.now()) + 1000 : 61000;
+        const waitSec = Math.ceil(wait / 1000);
+        updateProgress(`Rate limited. Waiting ${waitSec}s...`, ((i+1)/queryList.length) * 50);
+        await sleep(Math.min(wait, 65000));
+        i--; // Retry this query
+        continue;
+      }
+
+      const data = await resp.json();
+      if (!data.items) continue;
+
+      for (const user of data.items) {
+        if (!isScanning) break;
+        if (seen.has(user.login)) continue;
+        seen.add(user.login);
+
+        try {
+          const pResp = await fetch(`https://api.github.com/users/${user.login}`, { headers });
+          if (pResp.status === 403 || pResp.status === 429) break;
+          const p = await pResp.json();
+          if (p.followers < minFollowers) continue;
+
+          results.push({
+            source: 'github',
+            name: p.name || p.login,
+            username: p.login,
+            bio: p.bio || '',
+            company: p.company || '',
+            location: p.location || '',
+            followers: p.followers || 0,
+            repos: p.public_repos || 0,
+            created: p.created_at,
+            url: p.html_url,
+            points: 0,
+            avatar: p.avatar_url
+          });
+
+          await sleep(delayBetweenProfile);
+        } catch(e) { continue; }
+      }
+
+      await sleep(delayBetweenSearch);
+    } catch(e) {
+      console.error('GitHub query error:', e);
+    }
+  }
+
+  return results;
+}
+
+// ===================== HN SEARCH =====================
+async function searchHN(cfg) {
+  const results = [];
+  const queries = cfg.hnKeywords.split(',').map(k => k.trim()).filter(Boolean);
+  const minPoints = cfg.hnMinPoints;
+  const seen = new Set();
+
+  // Also add date-windowed queries for freshness
+  const ts2024 = 1704067200; // Jan 1 2024
+
+  for (let i = 0; i < queries.length; i++) {
+    if (!isScanning) break;
+    updateProgress(`HN: "${queries[i]}"`, 50 + ((i+1)/queries.length) * 40);
+
+    try {
+      const url = `https://hn.algolia.com/api/v1/search?query=${encodeURIComponent(queries[i])}&tags=show_hn&hitsPerPage=50&numericFilters=created_at_i>${ts2024}`;
+      const resp = await fetch(url);
+      const data = await resp.json();
+      if (!data.hits) continue;
+
+      for (const hit of data.hits) {
+        if (seen.has(hit.objectID)) continue;
+        seen.add(hit.objectID);
+        if (hit.points < minPoints) continue;
+
+        const text = (hit.title + ' ' + (hit.story_text || '')).toLowerCase();
+        const indiaTerms = ['india','bangalore','bengaluru','mumbai','delhi','hyderabad','pune','chennai','indian','kolkata','noida','gurgaon','gurugram'];
+        const isIndiaRelated = indiaTerms.some(t => text.includes(t));
+
+        results.push({
+          source: 'hn',
+          name: hit.author,
+          username: hit.author,
+          bio: hit.title + (hit.story_text ? ' — ' + hit.story_text.substring(0, 200) : ''),
+          company: hit.title.replace(/^Show HN:\s*/i, '').split(/[–—\-:]/).shift().trim(),
+          location: isIndiaRelated ? 'India (mentioned)' : 'Unknown',
+          followers: 0,
+          repos: 0,
+          created: hit.created_at,
+          url: hit.url || `https://news.ycombinator.com/item?id=${hit.objectID}`,
+          points: hit.points || 0,
+          hnComments: hit.num_comments || 0,
+          isIndiaRelated
+        });
+      }
+
+      await sleep(300);
+    } catch(e) {
+      console.error('HN error:', e);
+    }
+  }
+
+  return results;
+}
+
+// ===================== SCAN =====================
+async function startScan() {
+  if (isScanning) { stopScan(); return; }
+
+  isScanning = true;
+  const btn = document.getElementById('scan-btn');
+  btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 14 14" fill="none"><rect x="3" y="3" width="8" height="8" rx="1" fill="white"/></svg> Stop';
+  btn.classList.add('scanning');
+
+  document.getElementById('progress-wrap').classList.add('active');
+  document.getElementById('empty-state').style.display = 'none';
+
+  const cfg = getConfig();
+  saveConfig(); // Auto-save on scan
+
+  allResults = [];
+
+  try {
+    const ghResults = await searchGitHub(cfg);
+    allResults.push(...ghResults);
+  } catch(e) { console.error('GH scan failed:', e); }
+
+  if (isScanning) {
+    try {
+      const hnResults = await searchHN(cfg);
+      allResults.push(...hnResults);
+    } catch(e) { console.error('HN scan failed:', e); }
+  }
+
+  // Score
+  allResults.forEach(r => {
+    r.score = scoreProfile(r, cfg);
+    r.signals = extractSignals(r, cfg);
+    r.isNew = !seenProfiles[r.username];
+  });
+
+  // Deduplicate by username (prefer higher score)
+  const deduped = {};
+  allResults.forEach(r => {
+    if (!deduped[r.username] || r.score > deduped[r.username].score) {
+      deduped[r.username] = r;
+    }
+  });
+  allResults = Object.values(deduped);
+
+  // Sort and trim to top N
+  allResults.sort((a, b) => b.score - a.score);
+  allResults = allResults.slice(0, cfg.topN);
+
+  // Mark as seen
+  const now = Date.now();
+  allResults.forEach(r => {
+    if (!seenProfiles[r.username]) seenProfiles[r.username] = now;
+  });
+  try { localStorage.setItem('scout_seen', JSON.stringify(seenProfiles)); } catch(e) {}
+
+  updateProgress('Scan complete!', 100);
+  applyFilters();
+  updateCounts();
+
+  isScanning = false;
+  btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 14 14" fill="none"><circle cx="6" cy="6" r="5" stroke="white" stroke-width="1.5"/><line x1="10" y1="10" x2="13" y2="13" stroke="white" stroke-width="1.5" stroke-linecap="round"/></svg> Scan Again';
+  btn.classList.remove('scanning');
+
+  setTimeout(() => {
+    document.getElementById('progress-wrap').classList.remove('active');
+  }, 2500);
+}
+
+function stopScan() {
+  isScanning = false;
+}
+
+// ===================== RENDER =====================
+function applyFilters() {
+  let list = [...allResults];
+
+  if (currentSource !== 'all') {
+    list = list.filter(r => r.source === currentSource);
+  }
+
+  if (currentQuery) {
+    const q = currentQuery.toLowerCase();
+    list = list.filter(r =>
+      (r.name || '').toLowerCase().includes(q) ||
+      (r.bio || '').toLowerCase().includes(q) ||
+      (r.company || '').toLowerCase().includes(q) ||
+      (r.username || '').toLowerCase().includes(q) ||
+      (r.signals || []).some(s => s.toLowerCase().includes(q))
+    );
+  }
+
+  list.sort((a, b) => {
+    let av = a[sortField], bv = b[sortField];
+    if (typeof av === 'string') av = av.toLowerCase();
+    if (typeof bv === 'string') bv = bv.toLowerCase();
+    return av > bv ? sortDir : av < bv ? -sortDir : 0;
+  });
+
+  filteredResults = list;
+  render();
+}
+
+function render() {
+  if (!allResults.length && !isScanning) {
+    document.getElementById('empty-state').style.display = 'block';
+    document.getElementById('card-grid').style.display = 'none';
+    document.getElementById('table-wrap').style.display = 'none';
+    return;
+  }
+
+  document.getElementById('empty-state').style.display = 'none';
+
+  if (viewMode === 'cards') {
+    renderCards();
+    document.getElementById('card-grid').style.display = 'grid';
+    document.getElementById('table-wrap').style.display = 'none';
+  } else {
+    renderTable();
+    document.getElementById('card-grid').style.display = 'none';
+    document.getElementById('table-wrap').style.display = 'block';
+  }
+}
+
+function renderCards() {
+  const grid = document.getElementById('card-grid');
+  grid.innerHTML = filteredResults.map(r => {
+    const scoreClass = r.score >= 60 ? 'score-high' : r.score >= 35 ? 'score-med' : 'score-low';
+    const srcClass = r.source === 'github' ? 'src-github' : 'src-hn';
+    const srcLabel = r.source === 'github' ? 'GitHub' : 'Hacker News';
+
+    return `
+    <div class="card ${r.isNew ? 'is-new' : ''}">
+      <div class="card-top">
+        <div class="card-identity">
+          <h3>${esc(r.name)}</h3>
+          <div class="username">@${esc(r.username)}${r.location ? ' · ' + esc(r.location) : ''}</div>
+        </div>
+        <div class="card-score ${scoreClass}">${r.score}</div>
+      </div>
+      ${r.company ? `<div class="card-company">${esc(r.company)}</div>` : ''}
+      <div class="card-bio">${esc((r.bio || '').substring(0, 250))}</div>
+      <div class="card-meta">
+        <span class="card-source ${srcClass}">${srcLabel}</span>
+        ${r.source === 'github' ? `<span>${r.followers.toLocaleString()} followers</span><span>${r.repos} repos</span>` : ''}
+        ${r.source === 'hn' ? `<span>${r.points} pts</span><span>${r.hnComments || 0} comments</span>` : ''}
+      </div>
+      <div class="signal-tags">
+        ${(r.signals || []).map(s => `<span class="signal-tag ${getTagClass(s)}">${esc(s)}</span>`).join('')}
+      </div>
+      <div class="card-bottom">
+        <a class="card-link" href="${esc(r.url)}" target="_blank">View Profile →</a>
+        ${r.isNew ? '<span class="new-badge">NEW</span>' : ''}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function renderTable() {
+  const tbody = document.getElementById('table-body');
+  tbody.innerHTML = filteredResults.map(r => {
+    const scoreClass = r.score >= 60 ? 'score-high' : r.score >= 35 ? 'score-med' : 'score-low';
+    const srcClass = r.source === 'github' ? 'src-github' : 'src-hn';
+    return `<tr>
+      <td><span class="card-score ${scoreClass}" style="width:36px;height:36px;font-size:13px;display:inline-flex;">${r.score}</span></td>
+      <td><span class="card-source ${srcClass}">${r.source === 'github' ? 'GH' : 'HN'}</span></td>
+      <td><strong>${esc(r.name)}</strong><br><span style="color:var(--text3);font-size:11px">@${esc(r.username)}</span></td>
+      <td>${esc(r.company)}</td>
+      <td style="max-width:280px">${esc((r.bio || '').substring(0, 180))}</td>
+      <td>${r.source === 'github' ? r.followers.toLocaleString() : (r.points || 0) + ' pts'}</td>
+      <td><div class="signal-tags">${(r.signals || []).map(s => `<span class="signal-tag ${getTagClass(s)}">${esc(s)}</span>`).join('')}</div></td>
+      <td><a href="${esc(r.url)}" target="_blank">Open →</a></td>
+    </tr>`;
+  }).join('');
+}
+
+function getTagClass(signal) {
+  const s = signal.toLowerCase();
+  if (s === 'founder' || s === 'c-level') return 'tag-founder';
+  if (s === 'ai' || s === 'agents') return 'tag-ai';
+  if (s === 'stealth') return 'tag-stealth';
+  if (s === 'building' || s === 'bootstrapped') return 'tag-building';
+  if (s === 'shipped' || s === 'saas') return 'tag-shipped';
+  if (s === 'show hn' || s === 'hn popular') return 'tag-hn';
+  if (['iit','iisc','bits','nit','google','amazon','microsoft','flipkart','razorpay','uber','faang','stanford','mit','berkeley'].some(k => s.includes(k))) return 'tag-bg';
+  return 'tag-default';
+}
+
+// ===================== UI ACTIONS =====================
+function setSource(source, btn) {
+  currentSource = source;
+  document.querySelectorAll('[data-source]').forEach(b => {
+    b.classList.toggle('active', b.dataset.source === source);
+  });
+  applyFilters();
+}
+
+function filterText(q) {
+  currentQuery = q;
+  applyFilters();
+}
+
+function sortBy(field) {
+  if (sortField === field) sortDir *= -1;
+  else { sortField = field; sortDir = -1; }
+  applyFilters();
+}
+
+function setView(mode) {
+  viewMode = mode;
+  document.getElementById('view-cards').style.borderColor = mode === 'cards' ? 'var(--accent)' : '';
+  document.getElementById('view-cards').style.color = mode === 'cards' ? 'var(--accent2)' : '';
+  document.getElementById('view-table').style.borderColor = mode === 'table' ? 'var(--accent)' : '';
+  document.getElementById('view-table').style.color = mode === 'table' ? 'var(--accent2)' : '';
+  render();
+}
+
+function toggleConfig() {
+  const toggle = document.getElementById('config-toggle');
+  const body = document.getElementById('config-body');
+  toggle.classList.toggle('open');
+  body.classList.toggle('show');
+}
+
+function updateProgress(text, pct) {
+  document.getElementById('progress-text').textContent = text;
+  document.getElementById('progress-fill').style.width = pct + '%';
+}
+
+function updateCounts() {
+  const gh = allResults.filter(r => r.source === 'github').length;
+  const hn = allResults.filter(r => r.source === 'hn').length;
+  document.getElementById('gh-count').textContent = gh;
+  document.getElementById('hn-count').textContent = hn;
+  document.getElementById('total-count').textContent = allResults.length;
+}
+
+function esc(s) {
+  const d = document.createElement('div');
+  d.textContent = s || '';
+  return d.innerHTML;
+}
+
+function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+function showToast(msg) {
+  const t = document.createElement('div');
+  t.textContent = msg;
+  Object.assign(t.style, {
+    position: 'fixed', bottom: '20px', right: '20px', background: 'var(--accent)',
+    color: 'white', padding: '10px 20px', borderRadius: '8px', fontSize: '13px',
+    fontWeight: '600', zIndex: '9999', opacity: '0', transition: 'opacity 0.3s'
+  });
+  document.body.appendChild(t);
+  requestAnimationFrame(() => { t.style.opacity = '1'; });
+  setTimeout(() => { t.style.opacity = '0'; setTimeout(() => t.remove(), 300); }, 2000);
+}
+
+function exportCSV() {
+  const data = filteredResults.length ? filteredResults : allResults;
+  if (!data.length) return alert('No results to export. Run a scan first.');
+  const headers = ['Score','Source','Name','Username','Company','Bio','Location','Followers','Points','Signals','URL','New'];
+  const rows = data.map(r => [
+    r.score, r.source, `"${(r.name||'').replace(/"/g,'""')}"`, r.username,
+    `"${(r.company||'').replace(/"/g,'""')}"`,
+    `"${(r.bio||'').replace(/"/g,'""').substring(0,200)}"`,
+    `"${(r.location||'').replace(/"/g,'""')}"`,
+    r.followers, r.points || 0,
+    `"${(r.signals||[]).join('; ')}"`, r.url, r.isNew ? 'YES' : ''
+  ]);
+  const csv = [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
+  const blob = new Blob([csv], { type: 'text/csv' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = `scout_radar_${new Date().toISOString().split('T')[0]}.csv`; a.click();
+  URL.revokeObjectURL(url);
+}
+
+// ===================== INIT =====================
+loadConfig();
+updateTokenStatus();
+</script>
+</body>
+</html>
