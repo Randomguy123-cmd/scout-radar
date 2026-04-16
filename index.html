@@ -149,12 +149,65 @@
       Settings <span style="font-weight:400;color:var(--text3)">(click to customize)</span>
     </button>
     <div class="config-body" id="config-body">
-      <div class="config-grid">
-        <div class="cfg-field"><label>Location Focus</label><input type="text" id="cfg-location" value="India"><div class="cfg-hint">Used for supplementary GitHub user search</div></div>
+      <!-- Source tabs -->
+      <div style="display:flex;gap:6px;margin-bottom:14px;border-bottom:1px solid var(--border);padding-bottom:10px;">
+        <button class="btn btn-ghost active" data-cfg="general" onclick="setCfgTab('general',this)">General</button>
+        <button class="btn btn-ghost" data-cfg="github" onclick="setCfgTab('github',this)">GitHub</button>
+        <button class="btn btn-ghost" data-cfg="hn" onclick="setCfgTab('hn',this)">HN</button>
+        <button class="btn btn-ghost" data-cfg="ph" onclick="setCfgTab('ph',this)">Product Hunt</button>
+      </div>
+
+      <!-- General settings -->
+      <div class="config-grid cfg-tab" id="cfg-tab-general">
         <div class="cfg-field"><label>Exclude (skip funded startups)</label><textarea id="cfg-exclude">raised, series A, series B, funded, $M, VC-backed, YC W, YC S</textarea></div>
         <div class="cfg-field"><label>Strong Background Keywords</label><textarea id="cfg-strong-bg">IIT, IISC, BITS, NIT, ex-Google, ex-Amazon, ex-Microsoft, ex-Flipkart, ex-Razorpay, ex-Uber, ex-DeepMind, ex-OpenAI, FAANG, Stanford, MIT, Berkeley</textarea></div>
         <div class="cfg-field"><label>Max Results</label><input type="number" id="cfg-top-n" value="50" min="10" max="200"></div>
       </div>
+
+      <!-- GitHub settings -->
+      <div class="config-grid cfg-tab" id="cfg-tab-github" style="display:none;">
+        <div class="cfg-field"><label>Location Focus</label><input type="text" id="cfg-location" value="India"><div class="cfg-hint">For supplementary user search (repo search is global)</div></div>
+        <div class="cfg-field"><label>Profile Tags to Surface</label><textarea id="cfg-gh-tags">founder, co-founder, cto, ceo, building, shipped, bootstrapped, stealth, launching, indie hacker</textarea><div class="cfg-hint">Filters repo owners — must have one of these in bio or README</div></div>
+        <div class="cfg-field"><label>Repo Star Range</label>
+          <div style="display:flex;gap:8px;"><input type="number" id="cfg-gh-min-stars" value="3" min="0" style="width:80px"> <span style="color:var(--text3);padding-top:8px;">to</span> <input type="number" id="cfg-gh-max-stars" value="500" min="1" style="width:80px"></div>
+          <div class="cfg-hint">Low = indie builders. High cap excludes big company repos.</div>
+        </div>
+      </div>
+
+      <!-- HN settings -->
+      <div class="config-grid cfg-tab" id="cfg-tab-hn" style="display:none;">
+        <div class="cfg-field"><label>Time Window</label>
+          <select id="cfg-hn-window" style="width:100%;background:var(--bg);border:1px solid var(--border2);color:var(--text);padding:8px 12px;border-radius:6px;font-size:13px;">
+            <option value="3">Last 3 months</option>
+            <option value="6" selected>Last 6 months</option>
+            <option value="12">Last 12 months</option>
+          </select>
+        </div>
+        <div class="cfg-field"><label>Search Queries (hardcoded)</label>
+          <div style="font-size:12px;color:var(--text2);line-height:1.8;padding:8px 0;">
+            Show HN AI agent, Show HN LLM, Show HN autonomous agent, Show HN RAG, Show HN agentic, Show HN AI India, Show HN AI workflow, Show HN AI copilot
+          </div>
+          <div class="cfg-hint">Global results — no location filter available on HN. Filter India manually.</div>
+        </div>
+      </div>
+
+      <!-- PH settings -->
+      <div class="config-grid cfg-tab" id="cfg-tab-ph" style="display:none;">
+        <div class="cfg-field"><label>Time Window</label>
+          <select id="cfg-ph-window" style="width:100%;background:var(--bg);border:1px solid var(--border2);color:var(--text);padding:8px 12px;border-radius:6px;font-size:13px;">
+            <option value="7">Last 7 days</option>
+            <option value="30" selected>Last 30 days</option>
+            <option value="90">Last 3 months</option>
+          </select>
+        </div>
+        <div class="cfg-field"><label>Search Queries (hardcoded)</label>
+          <div style="font-size:12px;color:var(--text2);line-height:1.8;padding:8px 0;">
+            ai agent, llm tool, autonomous agent, agentic workflow, AI automation, generative AI
+          </div>
+          <div class="cfg-hint">Global results — PH doesn't expose maker location. Filter India manually.</div>
+        </div>
+      </div>
+
       <div class="cfg-actions">
         <button class="btn btn-ghost" onclick="saveConfig()">Save</button>
         <button class="btn btn-ghost" onclick="resetConfig()">Reset</button>
@@ -280,16 +333,41 @@ function loadConfig() {
     document.getElementById('cfg-exclude').value=c.exclude||DEFAULT_CONFIG.exclude;
     document.getElementById('cfg-top-n').value=c.topN??DEFAULT_CONFIG.topN;
     document.getElementById('cfg-strong-bg').value=c.strongBg||DEFAULT_CONFIG.strongBg;
+    if(c.hnWindowMonths) document.getElementById('cfg-hn-window').value=c.hnWindowMonths;
+    if(c.phWindowDays) document.getElementById('cfg-ph-window').value=c.phWindowDays;
+    if(c.ghTags) document.getElementById('cfg-gh-tags').value=c.ghTags;
+    if(c.ghMinStars) document.getElementById('cfg-gh-min-stars').value=c.ghMinStars;
+    if(c.ghMaxStars) document.getElementById('cfg-gh-max-stars').value=c.ghMaxStars;
   }} catch(e){}
   try { const t=localStorage.getItem('scout_gh_token'); if(t){document.getElementById('gh-token').value=t; updateTokenStatus();}} catch(e){}
   try { const s=localStorage.getItem('scout_seen'); if(s) seenProfiles=JSON.parse(s); } catch(e){}
   try { const r=localStorage.getItem('scout_results'); if(r){savedResults=JSON.parse(r);allResults=[...savedResults];applyFilters();updateCounts();if(savedResults.length)document.getElementById('empty-state').style.display='none';}} catch(e){}
 }
 
-function getConfig() { return { location:document.getElementById('cfg-location').value.trim(), bioKeywords:'AI agent, LLM, autonomous agent, agentic, generative AI, GenAI, foundation model, RAG, fine-tuning, AI infra, AI startup, AI founder', minFollowers:3, hnKeywords:'Show HN AI agent, Show HN LLM, Show HN autonomous agent, Show HN RAG, Show HN AI India, Show HN agentic', hnMinPoints:1, exclude:document.getElementById('cfg-exclude').value.trim(), topN:parseInt(document.getElementById('cfg-top-n').value)||50, strongBg:document.getElementById('cfg-strong-bg').value.trim() }; }
+function setCfgTab(tab, btn) {
+  document.querySelectorAll('.cfg-tab').forEach(el=>el.style.display='none');
+  document.getElementById('cfg-tab-'+tab).style.display='grid';
+  document.querySelectorAll('[data-cfg]').forEach(b=>b.classList.toggle('active',b.dataset.cfg===tab));
+}
+
+function getConfig() { return {
+  location: document.getElementById('cfg-location').value.trim(),
+  bioKeywords: 'AI agent, LLM, autonomous agent, agentic, generative AI, GenAI, foundation model, RAG, fine-tuning, AI infra, AI startup, AI founder',
+  minFollowers: 0,
+  hnKeywords: 'Show HN AI agent, Show HN LLM, Show HN autonomous agent, Show HN RAG, Show HN AI India, Show HN agentic, Show HN AI workflow, Show HN AI copilot',
+  hnMinPoints: 1,
+  hnWindowMonths: parseInt(document.getElementById('cfg-hn-window').value) || 6,
+  phWindowDays: parseInt(document.getElementById('cfg-ph-window').value) || 30,
+  ghTags: document.getElementById('cfg-gh-tags').value.trim(),
+  ghMinStars: parseInt(document.getElementById('cfg-gh-min-stars').value) || 3,
+  ghMaxStars: parseInt(document.getElementById('cfg-gh-max-stars').value) || 500,
+  exclude: document.getElementById('cfg-exclude').value.trim(),
+  topN: parseInt(document.getElementById('cfg-top-n').value) || 50,
+  strongBg: document.getElementById('cfg-strong-bg').value.trim()
+}; }
 
 function saveConfig() { localStorage.setItem('scout_config',JSON.stringify(getConfig())); const t=document.getElementById('gh-token').value.trim(); if(t)localStorage.setItem('scout_gh_token',t);else localStorage.removeItem('scout_gh_token'); showToast('Filters saved'); }
-function resetConfig() { document.getElementById('cfg-location').value=DEFAULT_CONFIG.location; document.getElementById('cfg-exclude').value=DEFAULT_CONFIG.exclude; document.getElementById('cfg-top-n').value=DEFAULT_CONFIG.topN; document.getElementById('cfg-strong-bg').value=DEFAULT_CONFIG.strongBg; localStorage.removeItem('scout_config'); showToast('Reset'); }
+function resetConfig() { document.getElementById('cfg-location').value=DEFAULT_CONFIG.location; document.getElementById('cfg-exclude').value=DEFAULT_CONFIG.exclude; document.getElementById('cfg-top-n').value=DEFAULT_CONFIG.topN; document.getElementById('cfg-strong-bg').value=DEFAULT_CONFIG.strongBg; document.getElementById('cfg-hn-window').value='6'; document.getElementById('cfg-ph-window').value='30'; document.getElementById('cfg-gh-tags').value='founder, co-founder, cto, ceo, building, shipped, bootstrapped, stealth, launching, indie hacker'; document.getElementById('cfg-gh-min-stars').value='3'; document.getElementById('cfg-gh-max-stars').value='500'; localStorage.removeItem('scout_config'); showToast('Reset'); }
 
 // ===================== TOKEN =====================
 document.getElementById('gh-token').addEventListener('input',()=>{ updateTokenStatus(); const t=document.getElementById('gh-token').value.trim(); if(t)localStorage.setItem('scout_gh_token',t);else localStorage.removeItem('scout_gh_token'); });
@@ -348,6 +426,7 @@ function extractSignals(p, cfg) {
   if(p.source==='ph'){sigs.push('Product Hunt');if(p._phVotes>50)sigs.push('PH Popular');}
   if(p._isIndiaLinked)sigs.push('India-linked');
   if(p._foundRepo)sigs.push('Has Repo');
+  if(p._matchedTags&&p._matchedTags.length)p._matchedTags.forEach(t=>sigs.push(t.charAt(0).toUpperCase()+t.slice(1)));
   return[...new Set(sigs)];
 }
 
@@ -612,19 +691,24 @@ async function searchGitHub(cfg) {
   const results=[], headers=getGHHeaders(), hasToken=!!document.getElementById('gh-token').value.trim();
   const seen=new Set();
 
-  // Repo-based queries: find actual AI agent projects, then work backwards to owners
+  // Build repo queries using configured star range
+  const minS = cfg.ghMinStars || 3, maxS = cfg.ghMaxStars || 500;
+  const starRange = `stars:${minS}..${maxS}`;
   const repoQueries = [
-    'ai+agent+stars:5..500+pushed:>2025-01-01+NOT+awesome+NOT+tutorial+NOT+course',
-    'llm+agent+stars:5..500+pushed:>2025-01-01+NOT+awesome+NOT+list',
-    'agentic+workflow+stars:3..500+pushed:>2025-01-01',
-    'autonomous+agent+AI+stars:5..500+pushed:>2025-01-01',
-    'rag+pipeline+stars:5..500+pushed:>2025-01-01+NOT+tutorial',
-    'ai+agent+framework+stars:3..500+pushed:>2025-01-01',
-    'langchain+agent+stars:3..300+pushed:>2025-01-01',
-    'multi+agent+stars:5..500+pushed:>2025-01-01+NOT+awesome',
-    'generative+ai+saas+stars:3..300+pushed:>2025-01-01',
-    'mcp+server+ai+stars:3..300+pushed:>2025-01-01',
+    `ai+agent+${starRange}+pushed:>2025-01-01+NOT+awesome+NOT+tutorial+NOT+course`,
+    `llm+agent+${starRange}+pushed:>2025-01-01+NOT+awesome+NOT+list`,
+    `agentic+workflow+${starRange}+pushed:>2025-01-01`,
+    `autonomous+agent+AI+${starRange}+pushed:>2025-01-01`,
+    `rag+pipeline+${starRange}+pushed:>2025-01-01+NOT+tutorial`,
+    `ai+agent+framework+${starRange}+pushed:>2025-01-01`,
+    `langchain+agent+stars:${minS}..300+pushed:>2025-01-01`,
+    `multi+agent+${starRange}+pushed:>2025-01-01+NOT+awesome`,
+    `generative+ai+saas+stars:${minS}..300+pushed:>2025-01-01`,
+    `mcp+server+ai+stars:${minS}..300+pushed:>2025-01-01`,
   ];
+
+  // Profile tags for filtering — owner must have at least one in bio
+  const profileTags = (cfg.ghTags || 'founder, co-founder, cto, ceo, building, shipped, bootstrapped, stealth').split(',').map(t=>t.trim().toLowerCase()).filter(Boolean);
 
   // Also keep a few user-search queries for India-based founders with AI bios
   const userQueries = [
@@ -673,7 +757,14 @@ async function searchGitHub(cfg) {
           if (p.type==='Organization' && (p.followers||0)>200) continue;
           const repo = chunk[j].repo;
 
+          // Check profile tags — bio, company, or repo description must contain at least one tag
+          const profileText = ((p.bio||'')+(p.company||'')+(repo.description||'')).toLowerCase();
+          const hasTag = profileTags.some(tag => profileText.includes(tag));
+          const matchedTags = profileTags.filter(tag => profileText.includes(tag));
+
           results.push({
+            _matchedTags: matchedTags,
+            _tagFiltered: hasTag,
             source:'github', name:p.name||p.login, username:p.login,
             bio: p.bio || '',
             company: p.company || '',
@@ -756,8 +847,10 @@ async function handleRateLimit(resp, qIdx, total) {
 // ===================== PRODUCT HUNT SEARCH =====================
 async function searchProductHunt(cfg) {
   const results=[], seen=new Set();
-  // PH doesn't have a free public API, but we can use their undocumented search endpoint
-  const phQueries = ['ai agent', 'llm tool', 'autonomous agent', 'agentic', 'AI workflow', 'generative AI India'];
+  const phQueries = ['ai agent', 'llm tool', 'autonomous agent', 'agentic workflow', 'AI automation', 'generative AI'];
+  const days = cfg.phWindowDays || 30;
+  const withinMap = {7:'week', 30:'month', 90:'quarter'};
+  const within = withinMap[days] || 'month';
 
   for (let i=0; i<phQueries.length; i++) {
     if (!isScanning) break;
@@ -769,7 +862,7 @@ async function searchProductHunt(cfg) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           operationName: 'SearchQuery',
-          variables: { query: phQueries[i], type: 'Posts', within: 'month' },
+          variables: { query: phQueries[i], type: 'Posts', within: within },
           query: `query SearchQuery($query: String!, $type: SearchType!, $within: SearchWithinType) {
             search(query: $query, type: $type, within: $within, first: 15) {
               edges { node { ... on Post { id name tagline url votesCount website commentsCount makers { name username headline } topics { edges { node { name } } } } } }
@@ -817,7 +910,10 @@ async function searchProductHunt(cfg) {
 
 // ===================== HN SEARCH =====================
 async function searchHN(cfg) {
-  const queries=cfg.hnKeywords.split(',').map(k=>k.trim()).filter(Boolean),seen=new Set(),results=[],ts=1704067200;
+  const queries=cfg.hnKeywords.split(',').map(k=>k.trim()).filter(Boolean),seen=new Set(),results=[];
+  const months = cfg.hnWindowMonths || 6;
+  const cutoff = new Date(); cutoff.setMonth(cutoff.getMonth() - months);
+  const ts = Math.floor(cutoff.getTime() / 1000);
   const allHits=await Promise.all(queries.map(async q=>{try{const r=await fetch(`https://hn.algolia.com/api/v1/search?query=${encodeURIComponent(q)}&tags=show_hn&hitsPerPage=50&numericFilters=created_at_i>${ts}`);return(await r.json()).hits||[];}catch(e){return[];}}));
   const india=['india','bangalore','bengaluru','mumbai','delhi','hyderabad','pune','chennai','indian','kolkata','noida','gurgaon','gurugram'];
   allHits.flat().forEach(h=>{if(seen.has(h.objectID))return;seen.add(h.objectID);if(h.points<cfg.hnMinPoints)return;
