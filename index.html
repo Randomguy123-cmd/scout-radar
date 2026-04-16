@@ -197,6 +197,8 @@
   .tag-shipped { background: var(--green-bg); color: var(--green); }
   .tag-bg { background: var(--yellow-bg); color: var(--yellow); }
   .tag-hn { background: rgba(249,115,22,0.12); color: var(--orange); }
+  .tag-warning { background: var(--red-bg); color: var(--red); }
+  .tag-stars { background: var(--yellow-bg); color: var(--yellow); }
   .tag-default { background: var(--surface2); color: var(--text3); }
 
   .card-source {
@@ -525,6 +527,12 @@ function parseList(str) {
   return str.split(',').map(s => s.trim().toLowerCase()).filter(Boolean);
 }
 
+// Employee/noise keywords — these people are NOT building startups
+const EMPLOYEE_SIGNALS = ['software engineer at','sde at','developer at','engineer at','intern at',
+  'student at','studying at','pursuing','open source enthusiast','contributor at','devops',
+  'sre at','data scientist at','ml engineer at','analyst at','consultant at','freelancer',
+  'open to work','looking for','seeking opportunities','available for hire'];
+
 function scoreProfile(profile, cfg) {
   let score = 0;
   const text = ((profile.bio || '') + ' ' + (profile.company || '')).toLowerCase();
@@ -532,20 +540,78 @@ function scoreProfile(profile, cfg) {
   const fundedKw = parseList(cfg.exclude);
   const strongBg = parseList(cfg.strongBg);
 
-  icpKw.forEach(kw => { if (text.includes(kw)) score += 10; });
-  strongBg.forEach(kw => { if (text.includes(kw)) score += 15; });
+  // === POSITIVE SIGNALS ===
+
+  // ICP keyword matches (+8 each, cap at 30)
+  let kwScore = 0;
+  icpKw.forEach(kw => { if (text.includes(kw)) kwScore += 8; });
+  score += Math.min(kwScore, 30);
+
+  // Strong background (+12 each, cap at 24)
+  let bgScore = 0;
+  strongBg.forEach(kw => { if (text.includes(kw)) bgScore += 12; });
+  score += Math.min(bgScore, 24);
+
+  // AI/tech domain keywords
+  if (text.match(/\bai\b/)) score += 10;
+  if (text.match(/\bagent/)) score += 6;
+  if (text.match(/\bsaas\b/)) score += 6;
+  if (text.match(/\bllm\b/) || text.includes('large language')) score += 6;
+  if (text.match(/\bml\b/) || text.includes('machine learning')) score += 4;
+  if (text.match(/\bgenai\b/) || text.includes('gen ai') || text.includes('generative')) score += 6;
+
+  // Has a website/blog linked (strong founder signal)
+  if (profile.blog) score += 10;
+  // Website is a product domain (.ai, .io, .co, .app, .com with custom domain)
+  if (profile.blog && profile.blog.match(/\.(ai|io|co|app|dev|tech|so)$/i)) score += 5;
+
+  // Recent GitHub account (2024+ = new venture signal)
+  if (profile.created && new Date(profile.created) > new Date('2024-01-01')) score += 8;
+
+  // Follower bonus (log scale, capped lower — followers matter less than activity)
+  if (profile.followers > 0) score += Math.min(Math.log10(profile.followers) * 5, 15);
+
+  // === DEEP SIGNALS (from enrichment) ===
+
+  // Recent commit activity (most important signal)
+  if (profile._recentCommits > 20) score += 15;
+  else if (profile._recentCommits > 5) score += 10;
+  else if (profile._recentCommits > 0) score += 5;
+  else if (profile._recentCommits === 0 && profile.source === 'github') score -= 10; // inactive = bad
+
+  // Repo quality — has repos with real traction
+  if (profile._topStars > 500) score += 20;
+  else if (profile._topStars > 100) score += 15;
+  else if (profile._topStars > 50) score += 10;
+  else if (profile._topStars > 10) score += 5;
+
+  // Has a product repo (not just tutorials/dotfiles)
+  if (profile._hasProductRepo) score += 10;
+
+  // Created a GitHub org (strong company signal)
+  if (profile._hasOrg) score += 8;
+
+  // HN points bonus
+  if (profile.source === 'hn' && profile.points) score += Math.min(profile.points / 5, 20);
+
+  // === NEGATIVE SIGNALS ===
+
+  // Funded signals
   fundedKw.forEach(kw => { if (text.includes(kw)) score -= 20; });
 
-  if (profile.followers > 0) score += Math.min(Math.log10(profile.followers) * 8, 25);
-  if (profile.repos > 20) score += 5;
-  if (profile.repos > 50) score += 5;
+  // Employee/job-seeker penalty
+  let isEmployee = false;
+  EMPLOYEE_SIGNALS.forEach(sig => {
+    if (text.includes(sig)) { score -= 15; isEmployee = true; }
+  });
 
-  if (profile.source === 'hn' && profile.points) score += Math.min(profile.points / 5, 20);
-  if (profile.created && new Date(profile.created) > new Date('2024-01-01')) score += 10;
+  // If bio says "engineer at X" BUT also "founder" — reduce penalty (could be ex-employee now founding)
+  if (isEmployee && (text.match(/\bfounder\b/) || text.match(/\bco-founder\b/) || text.includes('stealth'))) {
+    score += 10; // partial recovery
+  }
 
-  if (text.match(/\bai\b/)) score += 8;
-  if (text.match(/\bagent/)) score += 5;
-  if (text.match(/\bsaas\b/)) score += 5;
+  // Only tutorial/dotfile repos — not building anything real
+  if (profile._onlyTutorials) score -= 10;
 
   return Math.max(0, Math.min(100, Math.round(score)));
 }
@@ -562,8 +628,21 @@ function extractSignals(profile, cfg) {
   if (text.includes('bootstrapped')) signals.push('Bootstrapped');
   if (text.match(/\bai\b/i)) signals.push('AI');
   if (text.match(/\bagent/)) signals.push('Agents');
+  if (text.match(/\bllm\b/i) || text.includes('large language')) signals.push('LLM');
+  if (text.match(/\bgenai\b/i) || text.includes('gen ai')) signals.push('GenAI');
   if (text.includes('shipped') || text.includes('launched')) signals.push('Shipped');
   if (text.match(/\bsaas\b/i)) signals.push('SaaS');
+
+  // Deep signals
+  if (profile._recentCommits > 5) signals.push('Active');
+  if (profile._recentCommits === 0 && profile.source === 'github') signals.push('Inactive');
+  if (profile._topStars > 50) signals.push(`★${profile._topStars}`);
+  if (profile._hasProductRepo) signals.push('Product');
+  if (profile._hasOrg) signals.push('Has Org');
+  if (profile.blog) signals.push('Website');
+
+  // Employee detection
+  EMPLOYEE_SIGNALS.forEach(sig => { if (text.includes(sig)) signals.push('Employee'); });
 
   strongBg.forEach(kw => { if (text.includes(kw)) signals.push(kw.replace(/^ex-/i, '').toUpperCase()); });
 
@@ -575,7 +654,75 @@ function extractSignals(profile, cfg) {
   return [...new Set(signals)];
 }
 
-// ===================== GITHUB SEARCH (FAST) =====================
+// ===================== DEEP ENRICHMENT =====================
+// Noise repo names — skip these when evaluating quality
+const NOISE_REPOS = ['dotfiles','config','vimrc','awesome-','leetcode','interview','tutorial',
+  'learning-','course-','practice','notes','resume','portfolio-template','hackathon'];
+
+async function enrichProfile(username, headers) {
+  const enriched = { _recentCommits: 0, _topStars: 0, _hasProductRepo: false, _hasOrg: false, _onlyTutorials: true };
+
+  try {
+    // Fetch repos (sorted by stars) + events + orgs in parallel
+    const [reposResp, eventsResp, orgsResp] = await Promise.all([
+      fetch(`https://api.github.com/users/${username}/repos?sort=stars&per_page=6&direction=desc`, { headers }).then(r => r.ok ? r.json() : []).catch(() => []),
+      fetch(`https://api.github.com/users/${username}/events/public?per_page=30`, { headers }).then(r => r.ok ? r.json() : []).catch(() => []),
+      fetch(`https://api.github.com/users/${username}/orgs?per_page=5`, { headers }).then(r => r.ok ? r.json() : []).catch(() => [])
+    ]);
+
+    // --- Repo analysis ---
+    if (Array.isArray(reposResp)) {
+      for (const repo of reposResp) {
+        if (repo.fork) continue;
+        const name = (repo.name || '').toLowerCase();
+        const desc = (repo.description || '').toLowerCase();
+
+        // Track top stars
+        if (repo.stargazers_count > enriched._topStars) enriched._topStars = repo.stargazers_count;
+
+        // Is this a real product repo? (not a tutorial, dotfiles, etc.)
+        const isNoise = NOISE_REPOS.some(n => name.includes(n)) ||
+                        desc.includes('tutorial') || desc.includes('learning') ||
+                        desc.includes('course') || desc.includes('leetcode');
+
+        if (!isNoise && !repo.fork) {
+          enriched._onlyTutorials = false;
+          // Product signals: has a homepage, decent description, some stars
+          const hasHomepage = !!repo.homepage;
+          const hasDesc = desc.length > 20;
+          const hasStars = repo.stargazers_count > 3;
+          const recentPush = repo.pushed_at && (Date.now() - new Date(repo.pushed_at)) < 90 * 86400000;
+
+          if ((hasHomepage && hasDesc) || (hasStars && recentPush) || repo.stargazers_count > 20) {
+            enriched._hasProductRepo = true;
+          }
+        }
+      }
+      // If all repos are forks or noise
+      if (reposResp.length === 0) enriched._onlyTutorials = false; // no repos ≠ tutorials
+    }
+
+    // --- Activity analysis (last 90 days) ---
+    if (Array.isArray(eventsResp)) {
+      const ninetyDaysAgo = Date.now() - 90 * 86400000;
+      enriched._recentCommits = eventsResp.filter(e =>
+        e.type === 'PushEvent' && new Date(e.created_at) > ninetyDaysAgo
+      ).length;
+    }
+
+    // --- Org check ---
+    if (Array.isArray(orgsResp) && orgsResp.length > 0) {
+      enriched._hasOrg = true;
+    }
+
+  } catch(e) {
+    console.error('Enrich error for', username, e);
+  }
+
+  return enriched;
+}
+
+// ===================== GITHUB SEARCH (FAST + DEEP) =====================
 async function searchGitHub(cfg) {
   const results = [];
   const keywords = parseList(cfg.bioKeywords);
@@ -584,7 +731,7 @@ async function searchGitHub(cfg) {
   const headers = getGHHeaders();
   const hasToken = !!document.getElementById('gh-token').value.trim();
 
-  // Build focused queries — fewer but higher signal
+  // Build focused queries
   const queries = new Set();
   queries.add(`location:${location}+type:user+"founder"+"AI"`);
   queries.add(`location:${location}+type:user+"building"+"AI"`);
@@ -601,13 +748,11 @@ async function searchGitHub(cfg) {
   const queryList = [...queries];
   const seen = new Set();
   const perPage = 30;
-
-  // GitHub Search API: 30 req/min with token, 10/min without
   const searchDelay = hasToken ? 2100 : 6500;
 
   for (let i = 0; i < queryList.length; i++) {
     if (!isScanning) break;
-    updateProgress(`GitHub: Query ${i+1}/${queryList.length}`, ((i+1)/queryList.length) * 45);
+    updateProgress(`GitHub: Search ${i+1}/${queryList.length}`, ((i+1)/queryList.length) * 30);
 
     try {
       const resp = await fetch(
@@ -618,7 +763,7 @@ async function searchGitHub(cfg) {
       if (resp.status === 403 || resp.status === 429) {
         const reset = resp.headers.get('x-ratelimit-reset');
         const wait = reset ? Math.max(0, (parseInt(reset)*1000) - Date.now()) + 1000 : 61000;
-        updateProgress(`Rate limited. Waiting ${Math.ceil(wait/1000)}s...`, ((i+1)/queryList.length)*45);
+        updateProgress(`Rate limited. Waiting ${Math.ceil(wait/1000)}s...`, ((i+1)/queryList.length)*30);
         await sleep(Math.min(wait, 65000));
         i--;
         continue;
@@ -627,37 +772,44 @@ async function searchGitHub(cfg) {
       const data = await resp.json();
       if (!data.items) continue;
 
-      // Collect unique usernames from this query
       const batch = data.items.filter(u => { if (seen.has(u.login)) return false; seen.add(u.login); return true; });
 
-      // Fetch profiles in parallel batches of 5
+      // Fetch profiles in batches of 5
       for (let b = 0; b < batch.length; b += 5) {
         if (!isScanning) break;
         const chunk = batch.slice(b, b + 5);
+
+        // Step 1: Get basic profiles in parallel
         const profiles = await Promise.all(chunk.map(u =>
           fetch(`https://api.github.com/users/${u.login}`, { headers })
             .then(r => r.ok ? r.json() : null)
             .catch(() => null)
         ));
 
-        profiles.forEach(p => {
-          if (!p || p.followers < minFollowers) return;
+        // Step 2: Enrich qualifying profiles in parallel (repos, events, orgs)
+        const qualifying = profiles.filter(p => p && p.followers >= minFollowers);
+        const enrichments = await Promise.all(qualifying.map(p => enrichProfile(p.login, headers)));
+
+        qualifying.forEach((p, idx) => {
+          const e = enrichments[idx];
           results.push({
             source: 'github', name: p.name || p.login, username: p.login,
             bio: p.bio || '', company: p.company || '', location: p.location || '',
             followers: p.followers || 0, repos: p.public_repos || 0,
-            created: p.created_at, url: p.html_url, points: 0, avatar: p.avatar_url
+            created: p.created_at, url: p.html_url, points: 0, avatar: p.avatar_url,
+            blog: p.blog || '',
+            _recentCommits: e._recentCommits, _topStars: e._topStars,
+            _hasProductRepo: e._hasProductRepo, _hasOrg: e._hasOrg,
+            _onlyTutorials: e._onlyTutorials
           });
         });
 
-        // Brief pause between batches to stay within rate limits
+        updateProgress(`GitHub: Enriching profiles... (${results.length} found)`, 30 + ((i+1)/queryList.length) * 15);
+
         if (b + 5 < batch.length) await sleep(hasToken ? 100 : 500);
       }
 
-      // Live update results as we go
       liveUpdate(cfg);
-
-      // Delay between search queries (search endpoint has its own rate limit)
       if (i < queryList.length - 1) await sleep(searchDelay);
     } catch(e) {
       console.error('GitHub query error:', e);
@@ -894,11 +1046,14 @@ function renderTable() {
 function getTagClass(signal) {
   const s = signal.toLowerCase();
   if (s === 'founder' || s === 'c-level') return 'tag-founder';
-  if (s === 'ai' || s === 'agents') return 'tag-ai';
+  if (s === 'ai' || s === 'agents' || s === 'llm' || s === 'genai') return 'tag-ai';
   if (s === 'stealth') return 'tag-stealth';
   if (s === 'building' || s === 'bootstrapped') return 'tag-building';
-  if (s === 'shipped' || s === 'saas') return 'tag-shipped';
+  if (s === 'shipped' || s === 'saas' || s === 'product') return 'tag-shipped';
+  if (s === 'active' || s === 'website' || s === 'has org') return 'tag-shipped';
   if (s === 'show hn' || s === 'hn popular') return 'tag-hn';
+  if (s === 'inactive' || s === 'employee') return 'tag-warning';
+  if (s.startsWith('★')) return 'tag-stars';
   if (['iit','iisc','bits','nit','google','amazon','microsoft','flipkart','razorpay','uber','faang','stanford','mit','berkeley'].some(k => s.includes(k))) return 'tag-bg';
   return 'tag-default';
 }
