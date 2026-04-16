@@ -146,37 +146,33 @@
   <div class="config-wrap">
     <button class="config-toggle" id="config-toggle" onclick="toggleConfig()">
       <svg width="12" height="12" viewBox="0 0 12 12"><path d="M4 1L9 6L4 11" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round"/></svg>
-      Scouting Filters <span style="font-weight:400;color:var(--text3)">(click to customize)</span>
+      Settings <span style="font-weight:400;color:var(--text3)">(click to customize)</span>
     </button>
     <div class="config-body" id="config-body">
       <div class="config-grid">
-        <div class="cfg-field"><label>Location</label><input type="text" id="cfg-location" value="India"></div>
-        <div class="cfg-field"><label>Bio Keywords (AI Agent focused)</label><textarea id="cfg-bio-keywords">AI agent, LLM, autonomous agent, agentic, generative AI, GenAI, foundation model, RAG, fine-tuning, AI infra, AI startup, AI founder</textarea></div>
-        <div class="cfg-field"><label>Min GitHub Followers</label><input type="number" id="cfg-min-followers" value="5" min="0"></div>
-        <div class="cfg-field"><label>HN Search Queries</label><textarea id="cfg-hn-keywords">Show HN AI agent, Show HN LLM, Show HN autonomous agent, Show HN RAG, Show HN AI India, Show HN agentic</textarea></div>
-        <div class="cfg-field"><label>HN Min Points</label><input type="number" id="cfg-hn-points" value="1" min="0"></div>
-        <div class="cfg-field"><label>Exclude Keywords</label><textarea id="cfg-exclude">raised, series A, series B, funded, $M, VC-backed, YC W, YC S</textarea></div>
-        <div class="cfg-field"><label>Top N Results</label><input type="number" id="cfg-top-n" value="50" min="10" max="200"></div>
-        <div class="cfg-field"><label>Strong Background</label><textarea id="cfg-strong-bg">IIT, IISC, BITS, NIT, ex-Google, ex-Amazon, ex-Microsoft, ex-Flipkart, ex-Razorpay, ex-Uber, ex-DeepMind, ex-OpenAI, FAANG, Stanford, MIT, Berkeley</textarea></div>
+        <div class="cfg-field"><label>Location Focus</label><input type="text" id="cfg-location" value="India"><div class="cfg-hint">Used for supplementary GitHub user search</div></div>
+        <div class="cfg-field"><label>Exclude (skip funded startups)</label><textarea id="cfg-exclude">raised, series A, series B, funded, $M, VC-backed, YC W, YC S</textarea></div>
+        <div class="cfg-field"><label>Strong Background Keywords</label><textarea id="cfg-strong-bg">IIT, IISC, BITS, NIT, ex-Google, ex-Amazon, ex-Microsoft, ex-Flipkart, ex-Razorpay, ex-Uber, ex-DeepMind, ex-OpenAI, FAANG, Stanford, MIT, Berkeley</textarea></div>
+        <div class="cfg-field"><label>Max Results</label><input type="number" id="cfg-top-n" value="50" min="10" max="200"></div>
       </div>
       <div class="cfg-actions">
-        <button class="btn btn-ghost" onclick="saveConfig()">Save Filters</button>
-        <button class="btn btn-ghost" onclick="resetConfig()">Reset to Default</button>
+        <button class="btn btn-ghost" onclick="saveConfig()">Save</button>
+        <button class="btn btn-ghost" onclick="resetConfig()">Reset</button>
       </div>
     </div>
   </div>
 
   <div class="toolbar">
-    <button class="btn btn-scan" id="scan-btn" onclick="startScan()">
-      <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><circle cx="6" cy="6" r="5" stroke="white" stroke-width="1.5"/><line x1="10" y1="10" x2="13" y2="13" stroke="white" stroke-width="1.5" stroke-linecap="round"/></svg> Scan Now
-    </button>
-    <button class="btn btn-green" onclick="openImport()">+ Import from X / Manual</button>
-    <div class="toolbar-sep"></div>
     <button class="btn btn-ghost active" data-source="all" onclick="setSource('all',this)">All</button>
     <button class="btn btn-ghost" data-source="github" onclick="setSource('github',this)">GitHub</button>
     <button class="btn btn-ghost" data-source="hn" onclick="setSource('hn',this)">HN</button>
     <button class="btn btn-ghost" data-source="ph" onclick="setSource('ph',this)">Product Hunt</button>
     <button class="btn btn-ghost" data-source="manual" onclick="setSource('manual',this)">Manual</button>
+    <div class="toolbar-sep"></div>
+    <button class="btn btn-scan" id="scan-btn" onclick="startScan()">
+      <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><circle cx="6" cy="6" r="5" stroke="white" stroke-width="1.5"/><line x1="10" y1="10" x2="13" y2="13" stroke="white" stroke-width="1.5" stroke-linecap="round"/></svg> <span id="scan-label">Scan All</span>
+    </button>
+    <button class="btn btn-green" onclick="openImport()">+ Import</button>
     <div class="toolbar-sep"></div>
     <button class="btn btn-ghost active" id="view-cards" onclick="setView('cards')">Cards</button>
     <button class="btn btn-ghost" id="view-table" onclick="setView('table')">Table</button>
@@ -194,7 +190,7 @@
     <div class="card-grid" id="card-grid" style="display:none"></div>
     <div class="table-wrap" id="table-wrap" style="display:none">
       <table><thead><tr>
-        <th onclick="sortBy('score')">Score</th><th onclick="sortBy('source')">Source</th><th onclick="sortBy('name')">Name</th><th onclick="sortBy('company')">Company</th><th>Bio</th><th onclick="sortBy('followers')">Followers</th><th>Signals</th><th>Link</th>
+        <th onclick="sortBy('source')">Source</th><th onclick="sortBy('name')">Name</th><th onclick="sortBy('company')">Company</th><th>Bio</th><th onclick="sortBy('location')">Location</th><th>Signals</th><th>Link</th>
       </tr></thead><tbody id="table-body"></tbody></table>
     </div>
   </div>
@@ -280,14 +276,7 @@ const DEFAULT_CONFIG = {
 
 function loadConfig() {
   try { const s=localStorage.getItem('scout_config'); if(s){const c=JSON.parse(s);
-    ['location','bioKeywords','minFollowers','hnKeywords','hnMinPoints','exclude','topN','strongBg'].forEach(k=>{
-      const el=document.getElementById('cfg-'+k.replace(/([A-Z])/g,'-$1').toLowerCase().replace('bio-keywords','bio-keywords').replace('hn-keywords','hn-keywords').replace('hn-min-points','hn-points').replace('min-followers','min-followers').replace('top-n','top-n').replace('strong-bg','strong-bg'));
-    });
     document.getElementById('cfg-location').value=c.location||DEFAULT_CONFIG.location;
-    document.getElementById('cfg-bio-keywords').value=c.bioKeywords||DEFAULT_CONFIG.bioKeywords;
-    document.getElementById('cfg-min-followers').value=c.minFollowers??DEFAULT_CONFIG.minFollowers;
-    document.getElementById('cfg-hn-keywords').value=c.hnKeywords||DEFAULT_CONFIG.hnKeywords;
-    document.getElementById('cfg-hn-points').value=c.hnMinPoints??DEFAULT_CONFIG.hnMinPoints;
     document.getElementById('cfg-exclude').value=c.exclude||DEFAULT_CONFIG.exclude;
     document.getElementById('cfg-top-n').value=c.topN??DEFAULT_CONFIG.topN;
     document.getElementById('cfg-strong-bg').value=c.strongBg||DEFAULT_CONFIG.strongBg;
@@ -297,10 +286,10 @@ function loadConfig() {
   try { const r=localStorage.getItem('scout_results'); if(r){savedResults=JSON.parse(r);allResults=[...savedResults];applyFilters();updateCounts();if(savedResults.length)document.getElementById('empty-state').style.display='none';}} catch(e){}
 }
 
-function getConfig() { return { location:document.getElementById('cfg-location').value.trim(), bioKeywords:document.getElementById('cfg-bio-keywords').value.trim(), minFollowers:parseInt(document.getElementById('cfg-min-followers').value)||0, hnKeywords:document.getElementById('cfg-hn-keywords').value.trim(), hnMinPoints:parseInt(document.getElementById('cfg-hn-points').value)||0, exclude:document.getElementById('cfg-exclude').value.trim(), topN:parseInt(document.getElementById('cfg-top-n').value)||50, strongBg:document.getElementById('cfg-strong-bg').value.trim() }; }
+function getConfig() { return { location:document.getElementById('cfg-location').value.trim(), bioKeywords:'AI agent, LLM, autonomous agent, agentic, generative AI, GenAI, foundation model, RAG, fine-tuning, AI infra, AI startup, AI founder', minFollowers:3, hnKeywords:'Show HN AI agent, Show HN LLM, Show HN autonomous agent, Show HN RAG, Show HN AI India, Show HN agentic', hnMinPoints:1, exclude:document.getElementById('cfg-exclude').value.trim(), topN:parseInt(document.getElementById('cfg-top-n').value)||50, strongBg:document.getElementById('cfg-strong-bg').value.trim() }; }
 
 function saveConfig() { localStorage.setItem('scout_config',JSON.stringify(getConfig())); const t=document.getElementById('gh-token').value.trim(); if(t)localStorage.setItem('scout_gh_token',t);else localStorage.removeItem('scout_gh_token'); showToast('Filters saved'); }
-function resetConfig() { Object.entries(DEFAULT_CONFIG).forEach(([k,v])=>{ const id='cfg-'+k.replace(/([A-Z])/g,'-$1').toLowerCase(); const el=document.getElementById(id); if(el)el.value=v; }); document.getElementById('cfg-location').value=DEFAULT_CONFIG.location; document.getElementById('cfg-bio-keywords').value=DEFAULT_CONFIG.bioKeywords; document.getElementById('cfg-min-followers').value=DEFAULT_CONFIG.minFollowers; document.getElementById('cfg-hn-keywords').value=DEFAULT_CONFIG.hnKeywords; document.getElementById('cfg-hn-points').value=DEFAULT_CONFIG.hnMinPoints; document.getElementById('cfg-exclude').value=DEFAULT_CONFIG.exclude; document.getElementById('cfg-top-n').value=DEFAULT_CONFIG.topN; document.getElementById('cfg-strong-bg').value=DEFAULT_CONFIG.strongBg; localStorage.removeItem('scout_config'); showToast('Reset'); }
+function resetConfig() { document.getElementById('cfg-location').value=DEFAULT_CONFIG.location; document.getElementById('cfg-exclude').value=DEFAULT_CONFIG.exclude; document.getElementById('cfg-top-n').value=DEFAULT_CONFIG.topN; document.getElementById('cfg-strong-bg').value=DEFAULT_CONFIG.strongBg; localStorage.removeItem('scout_config'); showToast('Reset'); }
 
 // ===================== TOKEN =====================
 document.getElementById('gh-token').addEventListener('input',()=>{ updateTokenStatus(); const t=document.getElementById('gh-token').value.trim(); if(t)localStorage.setItem('scout_gh_token',t);else localStorage.removeItem('scout_gh_token'); });
@@ -842,21 +831,62 @@ function liveUpdate(cfg){const t=[...allResults];t.forEach(r=>{if(r.score===unde
 // ===================== SCAN =====================
 async function startScan(){
   if(isScanning){isScanning=false;return;}
-  isScanning=true;const btn=document.getElementById('scan-btn');btn.innerHTML='■ Stop';btn.classList.add('scanning');
+  isScanning=true;
+  const btn=document.getElementById('scan-btn');
+  const scanSource = currentSource === 'manual' ? 'all' : currentSource; // manual tab doesn't scan
+  const sourceLabel = {all:'All Sources', github:'GitHub', hn:'Hacker News', ph:'Product Hunt'}[scanSource]||'All Sources';
+  btn.innerHTML='■ Stop';btn.classList.add('scanning');
   document.getElementById('progress-wrap').classList.add('active');document.getElementById('empty-state').style.display='none';
-  const cfg=getConfig();saveConfig();allResults=[...savedResults];
-  const[gh,hn,ph]=await Promise.all([searchGitHub(cfg).catch(()=>[]),searchHN(cfg).catch(()=>[]),searchProductHunt(cfg).catch(()=>[])]);
-  allResults.push(...gh,...hn,...ph);
+  const cfg=getConfig();saveConfig();
+
+  // Keep existing saved results
+  allResults=[...savedResults];
+
+  // Run only the selected source(s)
+  let newResults = [];
+  try {
+    if (scanSource === 'all') {
+      updateProgress(`Scanning all sources...`, 5);
+      const [gh,hn,ph] = await Promise.all([
+        searchGitHub(cfg).catch(()=>[]),
+        searchHN(cfg).catch(()=>[]),
+        searchProductHunt(cfg).catch(()=>[])
+      ]);
+      newResults = [...gh, ...hn, ...ph];
+    } else if (scanSource === 'github') {
+      updateProgress(`Scanning GitHub repos...`, 5);
+      newResults = await searchGitHub(cfg).catch(()=>[]);
+    } else if (scanSource === 'hn') {
+      updateProgress(`Scanning Hacker News...`, 5);
+      newResults = await searchHN(cfg).catch(()=>[]);
+    } else if (scanSource === 'ph') {
+      updateProgress(`Scanning Product Hunt...`, 5);
+      newResults = await searchProductHunt(cfg).catch(()=>[]);
+    }
+  } catch(e) { console.error('Scan error', e); }
+
+  // Merge new results with existing
+  allResults.push(...newResults);
+
+  // Score, filter, deduplicate
   allResults.forEach(r=>{r.score=scoreProfile(r,cfg);r.signals=extractSignals(r,cfg);r.isNew=!seenProfiles[r.username];});
-  allResults=allResults.filter(r=>r.source==='manual'||hasAISignal(r)); // Keep manual imports, filter API results
+  allResults=allResults.filter(r=>r.source==='manual'||r.source==='ph'||hasAISignal(r));
   const deduped={};allResults.forEach(r=>{if(!deduped[r.username]||r.score>deduped[r.username].score)deduped[r.username]=r;});
   allResults=Object.values(deduped).sort((a,b)=>b.score-a.score).slice(0,cfg.topN);
+
+  // Persist
   const now=Date.now();allResults.forEach(r=>{if(!seenProfiles[r.username])seenProfiles[r.username]=now;});
   savedResults=[...allResults];
   try{localStorage.setItem('scout_results',JSON.stringify(savedResults));localStorage.setItem('scout_seen',JSON.stringify(seenProfiles));}catch(e){}
-  const nc=allResults.filter(r=>r.isNew).length;updateProgress(`Done! ${allResults.length} profiles (${nc} new)`,100);
+
+  const nc=newResults.length;
+  updateProgress(`Done! Found ${nc} from ${sourceLabel}. Total: ${allResults.length}`,100);
   applyFilters();updateCounts();isScanning=false;
-  btn.innerHTML='<svg width="14" height="14" viewBox="0 0 14 14" fill="none"><circle cx="6" cy="6" r="5" stroke="white" stroke-width="1.5"/><line x1="10" y1="10" x2="13" y2="13" stroke="white" stroke-width="1.5" stroke-linecap="round"/></svg> Scan Again';btn.classList.remove('scanning');
+
+  // Reset button
+  const labels = {all:'Scan All', github:'Scan GitHub', hn:'Scan HN', ph:'Scan Product Hunt'};
+  btn.innerHTML=`<svg width="14" height="14" viewBox="0 0 14 14" fill="none"><circle cx="6" cy="6" r="5" stroke="white" stroke-width="1.5"/><line x1="10" y1="10" x2="13" y2="13" stroke="white" stroke-width="1.5" stroke-linecap="round"/></svg> <span id="scan-label">${labels[scanSource]||'Scan All'}</span>`;
+  btn.classList.remove('scanning');
   setTimeout(()=>document.getElementById('progress-wrap').classList.remove('active'),2500);
 }
 
@@ -865,14 +895,23 @@ function applyFilters(){let l=[...allResults];if(currentSource!=='all')l=l.filte
 
 function render(){if(!allResults.length&&!isScanning){document.getElementById('empty-state').style.display='block';document.getElementById('card-grid').style.display='none';document.getElementById('table-wrap').style.display='none';return;}document.getElementById('empty-state').style.display='none';if(viewMode==='cards'){renderCards();document.getElementById('card-grid').style.display='grid';document.getElementById('table-wrap').style.display='none';}else{renderTable();document.getElementById('card-grid').style.display='none';document.getElementById('table-wrap').style.display='block';}}
 
-function renderCards(){document.getElementById('card-grid').innerHTML=filteredResults.map(r=>{const sc=r.score>=60?'score-high':r.score>=35?'score-med':'score-low',srcC=r.source==='github'?'src-github':r.source==='hn'?'src-hn':r.source==='ph'?'src-ph':'src-manual',srcL=r.source==='github'?'GitHub':r.source==='hn'?'Hacker News':r.source==='ph'?'Product Hunt':'Imported';return`<div class="card ${r.isNew?'is-new':''}"><div class="card-top"><div class="card-identity"><h3>${esc(r.name)}</h3><div class="username">@${esc(r.username)}${r.location?' · '+esc(r.location):''}</div></div><div class="card-score ${sc}">${r.score}</div></div>${r.company?`<div class="card-company">${esc(r.company)}</div>`:''}<div class="card-bio">${esc((r.bio||'').substring(0,250))}</div><div class="card-meta"><span class="card-source ${srcC}">${srcL}</span>${r.source==='github'?`<span>${r.followers.toLocaleString()} followers</span>`:r.source==='hn'?`<span>${r.points} pts</span>`:r.source==='ph'?`<span>${r.points} upvotes</span>`:''}</div><div class="signal-tags">${(r.signals||[]).map(s=>`<span class="signal-tag ${getTagClass(s)}">${esc(s)}</span>`).join('')}</div><div class="card-bottom">${r.url?`<a class="card-link" href="${esc(r.url)}" target="_blank">View →</a>`:'<span></span>'}${r.isNew?'<span class="new-badge">NEW</span>':''}</div></div>`;}).join('');}
+function renderCards(){document.getElementById('card-grid').innerHTML=filteredResults.map(r=>{const srcC=r.source==='github'?'src-github':r.source==='hn'?'src-hn':r.source==='ph'?'src-ph':'src-manual',srcL=r.source==='github'?'GitHub':r.source==='hn'?'Hacker News':r.source==='ph'?'Product Hunt':'Imported';return`<div class="card ${r.isNew?'is-new':''}"><div class="card-top"><div class="card-identity"><h3>${esc(r.name)}</h3><div class="username">@${esc(r.username)}${r.location?' · '+esc(r.location):''}</div></div>${r.isNew?'<span class="new-badge">NEW</span>':''}</div>${r.company?`<div class="card-company">${esc(r.company)}</div>`:''}<div class="card-bio">${esc((r.bio||'').substring(0,250))}</div><div class="card-meta"><span class="card-source ${srcC}">${srcL}</span>${r.source==='github'?`<span>${r.followers.toLocaleString()} followers</span>`:r.source==='hn'?`<span>${r.points} pts</span>`:r.source==='ph'?`<span>${r.points} upvotes</span>`:''}</div><div class="signal-tags">${(r.signals||[]).map(s=>`<span class="signal-tag ${getTagClass(s)}">${esc(s)}</span>`).join('')}</div><div class="card-bottom">${r.url?`<a class="card-link" href="${esc(r.url)}" target="_blank">View →</a>`:'<span></span>'}${r.blog&&r.blog!==r.url?`<a class="card-link" href="${esc(r.blog)}" target="_blank">Website →</a>`:''}</div></div>`;}).join('');}
 
-function renderTable(){document.getElementById('table-body').innerHTML=filteredResults.map(r=>{const sc=r.score>=60?'score-high':r.score>=35?'score-med':'score-low',srcC=r.source==='github'?'src-github':r.source==='hn'?'src-hn':r.source==='ph'?'src-ph':'src-manual';return`<tr><td><span class="card-score ${sc}" style="width:36px;height:36px;font-size:13px;display:inline-flex">${r.score}</span></td><td><span class="card-source ${srcC}">${r.source==='github'?'GH':r.source==='hn'?'HN':r.source==='ph'?'PH':'IMP'}</span></td><td><strong>${esc(r.name)}</strong><br><span style="color:var(--text3);font-size:11px">@${esc(r.username)}</span></td><td>${esc(r.company)}</td><td style="max-width:280px">${esc((r.bio||'').substring(0,180))}</td><td>${r.source==='github'?r.followers.toLocaleString():(r.points||0)+' pts'}</td><td><div class="signal-tags">${(r.signals||[]).map(s=>`<span class="signal-tag ${getTagClass(s)}">${esc(s)}</span>`).join('')}</div></td><td>${r.url?`<a href="${esc(r.url)}" target="_blank">Open →</a>`:''}</td></tr>`;}).join('');}
+function renderTable(){document.getElementById('table-body').innerHTML=filteredResults.map(r=>{const srcC=r.source==='github'?'src-github':r.source==='hn'?'src-hn':r.source==='ph'?'src-ph':'src-manual';return`<tr><td><span class="card-source ${srcC}">${r.source==='github'?'GH':r.source==='hn'?'HN':r.source==='ph'?'PH':'IMP'}</span></td><td><strong>${esc(r.name)}</strong><br><span style="color:var(--text3);font-size:11px">@${esc(r.username)}</span></td><td>${esc(r.company)}</td><td style="max-width:280px">${esc((r.bio||'').substring(0,180))}</td><td>${esc(r.location)}</td><td><div class="signal-tags">${(r.signals||[]).map(s=>`<span class="signal-tag ${getTagClass(s)}">${esc(s)}</span>`).join('')}</div></td><td>${r.url?`<a href="${esc(r.url)}" target="_blank">Open →</a>`:''}</td></tr>`;}).join('');}
 
 function getTagClass(s){s=s.toLowerCase();if(s==='founder'||s==='c-level')return'tag-founder';if(s==='ai'||s==='agents'||s==='llm'||s==='genai')return'tag-ai';if(s==='stealth')return'tag-stealth';if(s==='building'||s==='bootstrapped')return'tag-building';if(s==='shipped'||s==='saas'||s==='product')return'tag-shipped';if(s==='active'||s==='website'||s==='has org')return'tag-shipped';if(s==='show hn'||s==='hn popular'||s==='product hunt'||s==='ph popular')return'tag-hn';if(s==='india-linked'||s==='has repo')return'tag-shipped';if(s==='inactive'||s==='employee')return'tag-warning';if(s.startsWith('★'))return'tag-stars';if(s==='imported')return'tag-manual';if(['iit','iisc','bits','nit','google','amazon','microsoft','flipkart','razorpay','uber','faang','stanford','mit','berkeley','deepmind','openai'].some(k=>s.includes(k)))return'tag-bg';return'tag-default';}
 
 // ===================== UI =====================
-function setSource(src,btn){currentSource=src;document.querySelectorAll('[data-source]').forEach(b=>b.classList.toggle('active',b.dataset.source===src));applyFilters();}
+function setSource(src,btn){
+  currentSource=src;
+  document.querySelectorAll('[data-source]').forEach(b=>b.classList.toggle('active',b.dataset.source===src));
+  // Update scan button to reflect selected source
+  const labels = {all:'Scan All', github:'Scan GitHub', hn:'Scan HN', ph:'Scan Product Hunt', manual:'Import'};
+  document.getElementById('scan-label').textContent = labels[src] || 'Scan All';
+  const scanBtn = document.getElementById('scan-btn');
+  if (src === 'manual') { scanBtn.style.display = 'none'; } else { scanBtn.style.display = 'inline-flex'; }
+  applyFilters();
+}
 function filterText(q){currentQuery=q;applyFilters();}
 function sortBy(f){if(sortField===f)sortDir*=-1;else{sortField=f;sortDir=-1;}applyFilters();}
 function setView(m){viewMode=m;document.getElementById('view-cards').classList.toggle('active',m==='cards');document.getElementById('view-table').classList.toggle('active',m==='table');render();}
@@ -883,7 +922,7 @@ function esc(s){const d=document.createElement('div');d.textContent=s||'';return
 function sleep(ms){return new Promise(r=>setTimeout(r,ms));}
 function showToast(msg){const t=document.createElement('div');t.textContent=msg;Object.assign(t.style,{position:'fixed',bottom:'20px',right:'20px',background:'var(--accent)',color:'white',padding:'10px 20px',borderRadius:'8px',fontSize:'13px',fontWeight:'600',zIndex:'9999',opacity:'0',transition:'opacity 0.3s'});document.body.appendChild(t);requestAnimationFrame(()=>t.style.opacity='1');setTimeout(()=>{t.style.opacity='0';setTimeout(()=>t.remove(),300);},2000);}
 function clearHistory(){if(!confirm('Clear all saved results and history?'))return;savedResults=[];allResults=[];seenProfiles={};localStorage.removeItem('scout_results');localStorage.removeItem('scout_seen');applyFilters();updateCounts();showToast('Cleared');}
-function exportCSV(){const d=filteredResults.length?filteredResults:allResults;if(!d.length)return alert('No results');const h=['Score','Source','Name','Username','Company','Bio','Location','Followers','Points','Signals','URL','New'];const rows=d.map(r=>[r.score,r.source,`"${(r.name||'').replace(/"/g,'""')}"`,r.username,`"${(r.company||'').replace(/"/g,'""')}"`,`"${(r.bio||'').replace(/"/g,'""').substring(0,200)}"`,`"${(r.location||'').replace(/"/g,'""')}"`,r.followers,r.points||0,`"${(r.signals||[]).join('; ')}"`,r.url,r.isNew?'YES':'']);const csv=[h.join(','),...rows.map(r=>r.join(','))].join('\n');const blob=new Blob([csv],{type:'text/csv'});const u=URL.createObjectURL(blob);const a=document.createElement('a');a.href=u;a.download=`scout_radar_${new Date().toISOString().split('T')[0]}.csv`;a.click();URL.revokeObjectURL(u);}
+function exportCSV(){const d=filteredResults.length?filteredResults:allResults;if(!d.length)return alert('No results');const h=['Source','Name','Username','Company','Bio','Location','Signals','URL','New'];const rows=d.map(r=>[r.source,`"${(r.name||'').replace(/"/g,'""')}"`,r.username,`"${(r.company||'').replace(/"/g,'""')}"`,`"${(r.bio||'').replace(/"/g,'""').substring(0,200)}"`,`"${(r.location||'').replace(/"/g,'""')}"`,`"${(r.signals||[]).join('; ')}"`,r.url,r.isNew?'YES':'']);const csv=[h.join(','),...rows.map(r=>r.join(','))].join('\n');const blob=new Blob([csv],{type:'text/csv'});const u=URL.createObjectURL(blob);const a=document.createElement('a');a.href=u;a.download=`scout_radar_${new Date().toISOString().split('T')[0]}.csv`;a.click();URL.revokeObjectURL(u);}
 
 // ===================== INIT =====================
 loadConfig(); updateTokenStatus();
