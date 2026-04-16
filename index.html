@@ -363,6 +363,7 @@
     <div class="toolbar-right">
       <input class="filter-input" type="text" placeholder="Search name, company, keyword..." oninput="filterText(this.value)" id="filter-input">
       <button class="btn btn-ghost" onclick="exportCSV()">Export CSV</button>
+      <button class="btn btn-ghost" onclick="clearHistory()" title="Remove all saved results and start fresh">Clear History</button>
     </div>
   </div>
 
@@ -410,18 +411,19 @@ let sortField = 'score';
 let sortDir = -1;
 let viewMode = 'cards';
 let seenProfiles = {};  // username -> timestamp
+let savedResults = [];  // persistent across scans
 let isScanning = false;
 
 // ===================== CONFIG =====================
 const DEFAULT_CONFIG = {
   location: 'India',
-  bioKeywords: 'founder, building, stealth, co-founder, CEO, CTO, shipped, launched, bootstrapped',
-  minFollowers: 10,
-  hnKeywords: 'Show HN AI India, Show HN India startup, Show HN Bangalore, Show HN Indian, Show HN Mumbai',
+  bioKeywords: 'AI agent, LLM, autonomous agent, agentic, generative AI, GenAI, foundation model, RAG, fine-tuning, AI infra, AI startup, AI founder',
+  minFollowers: 5,
+  hnKeywords: 'Show HN AI agent, Show HN LLM, Show HN autonomous agent, Show HN RAG, Show HN AI India, Show HN agentic',
   hnMinPoints: 1,
   exclude: 'raised, series A, series B, funded, $M, VC-backed, YC W, YC S',
   topN: 50,
-  strongBg: 'IIT, IISC, BITS, NIT, ex-Google, ex-Amazon, ex-Microsoft, ex-Flipkart, ex-Razorpay, ex-Uber, FAANG, Stanford, MIT, Berkeley'
+  strongBg: 'IIT, IISC, BITS, NIT, ex-Google, ex-Amazon, ex-Microsoft, ex-Flipkart, ex-Razorpay, ex-Uber, ex-DeepMind, ex-OpenAI, FAANG, Stanford, MIT, Berkeley'
 };
 
 function loadConfig() {
@@ -453,6 +455,21 @@ function loadConfig() {
   try {
     const s = localStorage.getItem('scout_seen');
     if (s) seenProfiles = JSON.parse(s);
+  } catch(e) {}
+
+  // Load saved results from previous scans
+  try {
+    const sr = localStorage.getItem('scout_results');
+    if (sr) {
+      savedResults = JSON.parse(sr);
+      allResults = [...savedResults];
+      applyFilters();
+      updateCounts();
+      // Show previous results immediately
+      if (savedResults.length > 0) {
+        document.getElementById('empty-state').style.display = 'none';
+      }
+    }
   } catch(e) {}
 }
 
@@ -660,7 +677,7 @@ const NOISE_REPOS = ['dotfiles','config','vimrc','awesome-','leetcode','intervie
   'learning-','course-','practice','notes','resume','portfolio-template','hackathon'];
 
 async function enrichProfile(username, headers) {
-  const enriched = { _recentCommits: 0, _topStars: 0, _hasProductRepo: false, _hasOrg: false, _onlyTutorials: true };
+  const enriched = { _recentCommits: 0, _topStars: 0, _hasProductRepo: false, _hasOrg: false, _onlyTutorials: true, _repoTopics: '' };
 
   try {
     // Fetch repos (sorted by stars) + events + orgs in parallel
@@ -672,6 +689,14 @@ async function enrichProfile(username, headers) {
 
     // --- Repo analysis ---
     if (Array.isArray(reposResp)) {
+      // Collect all repo names, descriptions, and topics for AI signal detection
+      const allTopics = [];
+      for (const repo of reposResp) {
+        if (repo.topics) allTopics.push(...repo.topics);
+        allTopics.push(repo.name || '', repo.description || '');
+      }
+      enriched._repoTopics = allTopics.join(' ');
+
       for (const repo of reposResp) {
         if (repo.fork) continue;
         const name = (repo.name || '').toLowerCase();
@@ -731,19 +756,37 @@ async function searchGitHub(cfg) {
   const headers = getGHHeaders();
   const hasToken = !!document.getElementById('gh-token').value.trim();
 
-  // Build focused queries
+  // Build AI-agents focused queries — every query requires an AI term
   const queries = new Set();
-  queries.add(`location:${location}+type:user+"founder"+"AI"`);
-  queries.add(`location:${location}+type:user+"building"+"AI"`);
-  queries.add(`location:${location}+type:user+"stealth"`);
-  queries.add(`location:${location}+type:user+"CTO"+OR+"CEO"+"startup"`);
-  queries.add(`location:${location}+type:user+"founder"+"building"`);
-  queries.add(`location:${location}+type:user+"launched"+"startup"`);
-  queries.add(`location:${location}+type:user+"bootstrapped"`);
 
-  // Daily rotation for variety
-  const dayKws = ['"SaaS"+"founder"','"agent"+"AI"','"stealth"+"startup"','"shipped"+"product"','"launched"+"AI"','"co-founder"+"AI"','"indie"+"hacker"'];
-  queries.add(`location:${location}+type:user+${dayKws[new Date().getDay()]}`);
+  // Core: AI agent builders
+  queries.add(`location:${location}+type:user+"AI"+"agent"`);
+  queries.add(`location:${location}+type:user+"AI agent"+"founder"`);
+  queries.add(`location:${location}+type:user+"AI agent"+"building"`);
+  queries.add(`location:${location}+type:user+"agentic"+"AI"`);
+  queries.add(`location:${location}+type:user+"autonomous"+"agent"`);
+
+  // LLM / GenAI builders
+  queries.add(`location:${location}+type:user+"LLM"+"founder"`);
+  queries.add(`location:${location}+type:user+"LLM"+"building"`);
+  queries.add(`location:${location}+type:user+"generative AI"`);
+  queries.add(`location:${location}+type:user+"GenAI"`);
+  queries.add(`location:${location}+type:user+"RAG"+"AI"`);
+  queries.add(`location:${location}+type:user+"fine-tuning"+"AI"`);
+
+  // AI + founder/stealth signals
+  queries.add(`location:${location}+type:user+"AI"+"stealth"`);
+  queries.add(`location:${location}+type:user+"AI"+"startup"+"founder"`);
+  queries.add(`location:${location}+type:user+"AI"+"CTO"+OR+"CEO"`);
+  queries.add(`location:${location}+type:user+"AI infra"`);
+  queries.add(`location:${location}+type:user+"foundation model"`);
+
+  // Also pull from bio keywords config (user-customizable)
+  const cfgKeywords = keywords.filter(k => k.length > 2);
+  for (let i = 0; i < Math.min(cfgKeywords.length, 4); i += 2) {
+    const pair = cfgKeywords.slice(i, i + 2).map(k => `"${k}"`).join('+');
+    queries.add(`location:${location}+type:user+${pair}`);
+  }
 
   const queryList = [...queries];
   const seen = new Set();
@@ -800,7 +843,7 @@ async function searchGitHub(cfg) {
             blog: p.blog || '',
             _recentCommits: e._recentCommits, _topStars: e._topStars,
             _hasProductRepo: e._hasProductRepo, _hasOrg: e._hasOrg,
-            _onlyTutorials: e._onlyTutorials
+            _onlyTutorials: e._onlyTutorials, _repoTopics: e._repoTopics
           });
         });
 
@@ -879,6 +922,18 @@ function liveUpdate(cfg) {
   updateCounts();
 }
 
+// ===================== AI RELEVANCE GATE =====================
+const AI_TERMS = ['ai','artificial intelligence','machine learning','ml','llm','large language model',
+  'gpt','genai','generative ai','gen ai','agent','agentic','autonomous','rag','retrieval augmented',
+  'fine-tuning','fine tuning','foundation model','transformer','nlp','natural language','computer vision',
+  'deep learning','neural','diffusion','openai','anthropic','langchain','llamaindex','vector database',
+  'embedding','inference','prompt','chatbot','copilot'];
+
+function hasAISignal(profile) {
+  const text = ((profile.bio || '') + ' ' + (profile.company || '') + ' ' + (profile._repoTopics || '')).toLowerCase();
+  return AI_TERMS.some(term => text.includes(term));
+}
+
 // ===================== SCAN =====================
 async function startScan() {
   if (isScanning) { stopScan(); return; }
@@ -894,7 +949,8 @@ async function startScan() {
   const cfg = getConfig();
   saveConfig();
 
-  allResults = [];
+  // Start with saved results from previous scans (don't wipe them)
+  allResults = [...savedResults];
 
   // Run GitHub and HN in PARALLEL
   const [ghResults, hnResults] = await Promise.all([
@@ -902,16 +958,20 @@ async function startScan() {
     searchHN(cfg).catch(e => { console.error('HN failed:', e); return []; })
   ]);
 
+  // Merge new results into allResults
   allResults.push(...ghResults, ...hnResults);
 
-  // Final score pass
+  // Score all
   allResults.forEach(r => {
     r.score = scoreProfile(r, cfg);
     r.signals = extractSignals(r, cfg);
     r.isNew = !seenProfiles[r.username];
   });
 
-  // Deduplicate
+  // HARD AI FILTER: drop any profile with zero AI/agent/LLM signals
+  allResults = allResults.filter(r => hasAISignal(r));
+
+  // Deduplicate (keep highest score)
   const deduped = {};
   allResults.forEach(r => {
     if (!deduped[r.username] || r.score > deduped[r.username].score) deduped[r.username] = r;
@@ -925,7 +985,12 @@ async function startScan() {
   allResults.forEach(r => { if (!seenProfiles[r.username]) seenProfiles[r.username] = now; });
   try { localStorage.setItem('scout_seen', JSON.stringify(seenProfiles)); } catch(e) {}
 
-  updateProgress('Scan complete!', 100);
+  // PERSIST results for next scan / next visit
+  savedResults = [...allResults];
+  try { localStorage.setItem('scout_results', JSON.stringify(savedResults)); } catch(e) {}
+
+  const newCount = allResults.filter(r => r.isNew).length;
+  updateProgress(`Done! ${allResults.length} profiles (${newCount} new)`, 100);
   applyFilters();
   updateCounts();
 
@@ -1126,6 +1191,18 @@ function showToast(msg) {
   document.body.appendChild(t);
   requestAnimationFrame(() => { t.style.opacity = '1'; });
   setTimeout(() => { t.style.opacity = '0'; setTimeout(() => t.remove(), 300); }, 2000);
+}
+
+function clearHistory() {
+  if (!confirm('Clear all saved results and seen history? This cannot be undone.')) return;
+  savedResults = [];
+  allResults = [];
+  seenProfiles = {};
+  localStorage.removeItem('scout_results');
+  localStorage.removeItem('scout_seen');
+  applyFilters();
+  updateCounts();
+  showToast('History cleared');
 }
 
 function exportCSV() {
