@@ -1,0 +1,1245 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Scout Radar — AI Agent Founder Scouting</title>
+<style>
+  :root {
+    --bg: #09090b; --surface: #18181b; --surface2: #27272a; --surface3: #3f3f46;
+    --border: #27272a; --border2: #3f3f46;
+    --text: #fafafa; --text2: #a1a1aa; --text3: #71717a;
+    --accent: #7c3aed; --accent2: #a78bfa; --accent-bg: rgba(124,58,237,0.12);
+    --green: #22c55e; --green-bg: rgba(34,197,94,0.12);
+    --yellow: #eab308; --yellow-bg: rgba(234,179,8,0.12);
+    --red: #ef4444; --red-bg: rgba(239,68,68,0.12);
+    --blue: #3b82f6; --blue-bg: rgba(59,130,246,0.12);
+    --orange: #f97316;
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); min-height:100vh; }
+  .app { max-width: 1440px; margin: 0 auto; }
+
+  .header { padding: 20px 28px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 100; background: var(--bg); }
+  .logo { display: flex; align-items: center; gap: 10px; }
+  .logo svg { width: 28px; height: 28px; }
+  .logo h1 { font-size: 18px; font-weight: 700; letter-spacing: -0.3px; }
+  .logo h1 span { color: var(--accent2); }
+  .header-stats { display: flex; gap: 8px; align-items: center; }
+  .stat-pill { padding: 5px 12px; border-radius: 20px; font-size: 12px; font-weight: 500; display: flex; align-items: center; gap: 5px; }
+  .stat-pill .dot { width: 6px; height: 6px; border-radius: 50%; }
+  .stat-gh { background: var(--surface2); color: var(--text2); } .stat-gh .dot { background: var(--blue); }
+  .stat-hn { background: var(--surface2); color: var(--text2); } .stat-hn .dot { background: var(--orange); }
+  .stat-manual { background: var(--surface2); color: var(--text2); } .stat-manual .dot { background: var(--green); }
+  .stat-total { background: var(--accent-bg); color: var(--accent2); font-weight: 600; }
+
+  .token-bar { padding: 10px 28px; background: var(--surface); border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 12px; font-size: 13px; }
+  .token-bar label { color: var(--text2); white-space: nowrap; }
+  .token-input { flex: 1; max-width: 420px; background: var(--bg); border: 1px solid var(--border2); color: var(--text); padding: 7px 12px; border-radius: 6px; font-size: 13px; font-family: 'SF Mono', monospace; }
+  .token-input:focus { outline: none; border-color: var(--accent); }
+  .token-status { font-size: 12px; } .token-status.ok { color: var(--green); } .token-status.limited { color: var(--yellow); }
+  .token-help { color: var(--text3); font-size: 12px; } .token-help a { color: var(--accent2); text-decoration: none; } .token-help a:hover { text-decoration: underline; }
+
+  .config-wrap { padding: 16px 28px; border-bottom: 1px solid var(--border); }
+  .config-toggle { display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 13px; color: var(--text2); font-weight: 500; background: none; border: none; padding: 0; }
+  .config-toggle:hover { color: var(--text); }
+  .config-toggle svg { transition: transform 0.2s; } .config-toggle.open svg { transform: rotate(90deg); }
+  .config-body { display: none; padding-top: 16px; } .config-body.show { display: block; }
+  .config-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 14px; }
+  .cfg-field label { display: block; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text3); margin-bottom: 5px; font-weight: 600; }
+  .cfg-field input, .cfg-field textarea { width: 100%; background: var(--bg); border: 1px solid var(--border2); color: var(--text); padding: 8px 12px; border-radius: 6px; font-size: 13px; }
+  .cfg-field textarea { resize: vertical; min-height: 60px; font-family: inherit; }
+  .cfg-field input:focus, .cfg-field textarea:focus { outline: none; border-color: var(--accent); }
+  .cfg-hint { font-size: 11px; color: var(--text3); margin-top: 3px; }
+  .cfg-actions { display: flex; gap: 8px; margin-top: 14px; }
+
+  .toolbar { padding: 14px 28px; display: flex; align-items: center; gap: 10px; border-bottom: 1px solid var(--border); flex-wrap: wrap; }
+  .btn { padding: 8px 16px; border-radius: 6px; border: none; cursor: pointer; font-size: 13px; font-weight: 600; transition: all 0.15s; display: inline-flex; align-items: center; gap: 6px; }
+  .btn-scan { background: var(--accent); color: white; padding: 8px 22px; } .btn-scan:hover { background: #6d28d9; } .btn-scan:disabled { opacity: 0.5; cursor: not-allowed; }
+  .btn-ghost { background: transparent; color: var(--text2); border: 1px solid var(--border2); } .btn-ghost:hover { border-color: var(--text3); color: var(--text); }
+  .btn-ghost.active { border-color: var(--accent); color: var(--accent2); background: var(--accent-bg); }
+  .btn-green { background: var(--green); color: white; } .btn-green:hover { background: #16a34a; }
+  .toolbar-sep { width: 1px; height: 24px; background: var(--border2); margin: 0 4px; }
+  .filter-input { background: var(--surface); border: 1px solid var(--border2); color: var(--text); padding: 8px 14px; border-radius: 6px; font-size: 13px; width: 240px; }
+  .filter-input:focus { outline: none; border-color: var(--accent); } .filter-input::placeholder { color: var(--text3); }
+  .toolbar-right { margin-left: auto; display: flex; align-items: center; gap: 8px; }
+
+  .progress-wrap { padding: 0 28px; overflow: hidden; max-height: 0; transition: max-height 0.3s; } .progress-wrap.active { max-height: 60px; }
+  .progress-inner { padding: 10px 0; } .progress-text { font-size: 12px; color: var(--text2); margin-bottom: 4px; }
+  .progress-track { height: 3px; background: var(--surface2); border-radius: 2px; overflow: hidden; }
+  .progress-fill { height: 100%; background: linear-gradient(90deg, var(--accent), var(--green)); transition: width 0.3s; }
+
+  .results { padding: 16px 28px; }
+  .card-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 12px; }
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 16px; transition: border-color 0.15s; position: relative; }
+  .card:hover { border-color: var(--border2); } .card.is-new { border-left: 3px solid var(--green); }
+  .card-top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px; }
+  .card-identity h3 { font-size: 14px; font-weight: 600; margin-bottom: 2px; }
+  .card-identity .username { font-size: 12px; color: var(--text3); }
+  .card-score { width: 44px; height: 44px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 700; flex-shrink: 0; }
+  .score-high { background: var(--green-bg); color: var(--green); } .score-med { background: var(--yellow-bg); color: var(--yellow); } .score-low { background: var(--red-bg); color: var(--red); }
+  .card-company { font-size: 13px; color: var(--text); margin-bottom: 6px; font-weight: 500; }
+  .card-bio { font-size: 12px; color: var(--text2); line-height: 1.5; margin-bottom: 10px; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+  .card-meta { display: flex; align-items: center; gap: 12px; font-size: 12px; color: var(--text3); margin-bottom: 10px; } .card-meta span { display: flex; align-items: center; gap: 4px; }
+  .signal-tags { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 10px; }
+  .signal-tag { padding: 2px 8px; border-radius: 4px; font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.3px; }
+  .tag-founder { background: var(--accent-bg); color: var(--accent2); } .tag-ai { background: var(--blue-bg); color: var(--blue); }
+  .tag-stealth { background: var(--green-bg); color: var(--green); } .tag-building { background: rgba(249,115,22,0.12); color: var(--orange); }
+  .tag-shipped { background: var(--green-bg); color: var(--green); } .tag-bg { background: var(--yellow-bg); color: var(--yellow); }
+  .tag-hn { background: rgba(249,115,22,0.12); color: var(--orange); } .tag-warning { background: var(--red-bg); color: var(--red); }
+  .tag-stars { background: var(--yellow-bg); color: var(--yellow); } .tag-manual { background: rgba(34,197,94,0.12); color: var(--green); }
+  .tag-default { background: var(--surface2); color: var(--text3); }
+  .card-source { display: inline-flex; align-items: center; gap: 4px; font-size: 11px; font-weight: 600; text-transform: uppercase; padding: 3px 8px; border-radius: 4px; }
+  .src-github { background: var(--blue-bg); color: var(--blue); } .src-hn { background: rgba(249,115,22,0.12); color: var(--orange); } .src-ph { background: rgba(218,85,47,0.12); color: #da552f; } .src-manual { background: var(--green-bg); color: var(--green); }
+  .card-bottom { display: flex; justify-content: space-between; align-items: center; }
+  .card-link { font-size: 12px; color: var(--accent2); text-decoration: none; font-weight: 500; display: flex; align-items: center; gap: 4px; } .card-link:hover { text-decoration: underline; }
+  .new-badge { font-size: 10px; font-weight: 700; text-transform: uppercase; color: var(--green); letter-spacing: 0.5px; }
+  .empty-state { text-align: center; padding: 80px 20px; color: var(--text2); } .empty-state h3 { font-size: 16px; color: var(--text); margin-bottom: 6px; } .empty-state p { font-size: 14px; max-width: 420px; margin: 0 auto; line-height: 1.6; }
+
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.5} } .scanning { animation: pulse 1.5s infinite; }
+
+  /* Import modal */
+  .modal-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.7); z-index:200; align-items:center; justify-content:center; }
+  .modal-overlay.show { display:flex; }
+  .modal { background: var(--surface); border: 1px solid var(--border2); border-radius: 12px; padding: 24px; width: 90%; max-width: 640px; max-height: 80vh; overflow-y: auto; }
+  .modal h2 { font-size: 16px; margin-bottom: 4px; } .modal p { font-size: 13px; color: var(--text2); margin-bottom: 16px; }
+  .modal textarea { width:100%; min-height: 200px; background: var(--bg); border: 1px solid var(--border2); color: var(--text); padding: 12px; border-radius: 8px; font-size: 13px; font-family: 'SF Mono', monospace; resize: vertical; }
+  .modal textarea:focus { outline: none; border-color: var(--accent); }
+  .modal-actions { display: flex; gap: 8px; margin-top: 12px; justify-content: flex-end; }
+  .import-hint { font-size: 11px; color: var(--text3); margin-top: 8px; line-height: 1.6; }
+
+  .table-wrap { overflow-x: auto; } .table-wrap table { width: 100%; border-collapse: collapse; }
+  .table-wrap thead th { text-align: left; padding: 10px 12px; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text3); border-bottom: 1px solid var(--border); background: var(--surface); position: sticky; top: 0; cursor: pointer; user-select: none; font-weight: 600; }
+  .table-wrap thead th:hover { color: var(--accent2); }
+  .table-wrap tbody td { padding: 10px 12px; border-bottom: 1px solid var(--border); font-size: 13px; vertical-align: top; }
+  .table-wrap tbody tr:hover { background: var(--surface); } .table-wrap a { color: var(--accent2); text-decoration: none; } .table-wrap a:hover { text-decoration: underline; }
+
+  @media (max-width: 768px) { .card-grid { grid-template-columns: 1fr; } .toolbar { gap: 8px; } .filter-input { width: 100%; } .toolbar-right { margin-left: 0; width: 100%; } .config-grid { grid-template-columns: 1fr; } }
+  ::-webkit-scrollbar { width: 6px; } ::-webkit-scrollbar-track { background: var(--bg); } ::-webkit-scrollbar-thumb { background: var(--surface3); border-radius: 3px; }
+</style>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+<div class="app">
+  <div class="header">
+    <div class="logo">
+      <svg viewBox="0 0 28 28" fill="none"><circle cx="14" cy="14" r="13" stroke="#7c3aed" stroke-width="2"/><circle cx="14" cy="14" r="5" fill="#7c3aed"/><line x1="14" y1="1" x2="14" y2="8" stroke="#7c3aed" stroke-width="2" stroke-linecap="round"/><line x1="14" y1="20" x2="14" y2="27" stroke="#7c3aed" stroke-width="2" stroke-linecap="round"/><line x1="1" y1="14" x2="8" y2="14" stroke="#7c3aed" stroke-width="2" stroke-linecap="round"/><line x1="20" y1="14" x2="27" y2="14" stroke="#7c3aed" stroke-width="2" stroke-linecap="round"/></svg>
+      <h1><span>Scout</span> Radar</h1>
+    </div>
+    <div class="header-stats">
+      <div class="stat-pill stat-gh"><span class="dot"></span> GitHub: <strong id="gh-count">0</strong></div>
+      <div class="stat-pill stat-hn"><span class="dot"></span> HN: <strong id="hn-count">0</strong></div>
+      <div class="stat-pill" style="background:var(--surface2);color:var(--text2)"><span class="dot" style="background:#da552f"></span> PH: <strong id="ph-count">0</strong></div>
+      <div class="stat-pill stat-manual"><span class="dot"></span> Manual: <strong id="manual-count">0</strong></div>
+      <div class="stat-pill stat-total">Top <strong id="total-count">0</strong></div>
+    </div>
+  </div>
+
+  <div class="token-bar">
+    <label>GitHub Token</label>
+    <input class="token-input" type="password" id="gh-token" placeholder="ghp_xxxx... (boosts to 5,000 req/hr)" autocomplete="off">
+    <span class="token-status" id="token-status"></span>
+    <span class="token-help"><a href="https://github.com/settings/tokens/new?description=ScoutRadar&scopes=read:user" target="_blank">Generate token →</a></span>
+  </div>
+
+  <div class="config-wrap">
+    <button class="config-toggle" id="config-toggle" onclick="toggleConfig()">
+      <svg width="12" height="12" viewBox="0 0 12 12"><path d="M4 1L9 6L4 11" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round"/></svg>
+      Settings <span style="font-weight:400;color:var(--text3)">(click to customize)</span>
+    </button>
+    <div class="config-body" id="config-body">
+      <!-- Source tabs -->
+      <div style="display:flex;gap:6px;margin-bottom:14px;border-bottom:1px solid var(--border);padding-bottom:10px;">
+        <button class="btn btn-ghost active" data-cfg="general" onclick="setCfgTab('general',this)">General</button>
+        <button class="btn btn-ghost" data-cfg="github" onclick="setCfgTab('github',this)">GitHub</button>
+        <button class="btn btn-ghost" data-cfg="hn" onclick="setCfgTab('hn',this)">HN</button>
+        <button class="btn btn-ghost" data-cfg="ph" onclick="setCfgTab('ph',this)">Product Hunt</button>
+      </div>
+
+      <!-- General settings -->
+      <div class="config-grid cfg-tab" id="cfg-tab-general">
+        <div class="cfg-field"><label>Exclude (skip funded startups)</label><textarea id="cfg-exclude">raised, series A, series B, funded, $M, VC-backed, YC W, YC S</textarea></div>
+        <div class="cfg-field"><label>Strong Background Keywords</label><textarea id="cfg-strong-bg">IIT, IISC, BITS, NIT, ex-Google, ex-Amazon, ex-Microsoft, ex-Flipkart, ex-Razorpay, ex-Uber, ex-DeepMind, ex-OpenAI, FAANG, Stanford, MIT, Berkeley</textarea></div>
+        <div class="cfg-field"><label>Max Results</label><input type="number" id="cfg-top-n" value="50" min="10" max="200"></div>
+      </div>
+
+      <!-- GitHub settings -->
+      <div class="config-grid cfg-tab" id="cfg-tab-github" style="display:none;">
+        <div class="cfg-field"><label>Location Focus</label><input type="text" id="cfg-location" value="India"><div class="cfg-hint">For supplementary user search (repo search is global)</div></div>
+        <div class="cfg-field"><label>Profile Tags to Surface</label><textarea id="cfg-gh-tags">founder, co-founder, cto, ceo, building, shipped, bootstrapped, stealth, launching, indie hacker</textarea><div class="cfg-hint">Filters repo owners — must have one of these in bio or README</div></div>
+        <div class="cfg-field"><label>Repo Star Range</label>
+          <div style="display:flex;gap:8px;"><input type="number" id="cfg-gh-min-stars" value="3" min="0" style="width:80px"> <span style="color:var(--text3);padding-top:8px;">to</span> <input type="number" id="cfg-gh-max-stars" value="500" min="1" style="width:80px"></div>
+          <div class="cfg-hint">Low = indie builders. High cap excludes big company repos.</div>
+        </div>
+        <div class="cfg-field">
+          <label>Only Active GitHub Builders</label>
+          <div style="display:flex;align-items:center;gap:8px;">
+            <input type="checkbox" id="cfg-gh-active-only" checked>
+            <span class="cfg-hint">Keep profiles that look like active builders (product repo + not tutorial/noise).</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- HN settings -->
+      <div class="config-grid cfg-tab" id="cfg-tab-hn" style="display:none;">
+        <div class="cfg-field"><label>Time Window</label>
+          <select id="cfg-hn-window" style="width:100%;background:var(--bg);border:1px solid var(--border2);color:var(--text);padding:8px 12px;border-radius:6px;font-size:13px;">
+            <option value="3">Last 3 months</option>
+            <option value="6" selected>Last 6 months</option>
+            <option value="12">Last 12 months</option>
+          </select>
+        </div>
+        <div class="cfg-field"><label>Search Queries (hardcoded)</label>
+          <div style="font-size:12px;color:var(--text2);line-height:1.8;padding:8px 0;">
+            Show HN AI agent, Show HN LLM, Show HN autonomous agent, Show HN RAG, Show HN agentic, Show HN AI India, Show HN AI workflow, Show HN AI copilot
+          </div>
+          <div class="cfg-hint">Global results — no location filter available on HN. Filter India manually.</div>
+        </div>
+      </div>
+
+      <!-- PH settings -->
+      <div class="config-grid cfg-tab" id="cfg-tab-ph" style="display:none;">
+        <div class="cfg-field"><label>Time Window</label>
+          <select id="cfg-ph-window" style="width:100%;background:var(--bg);border:1px solid var(--border2);color:var(--text);padding:8px 12px;border-radius:6px;font-size:13px;">
+            <option value="7">Last 7 days</option>
+            <option value="30" selected>Last 30 days</option>
+            <option value="90">Last 3 months</option>
+          </select>
+        </div>
+        <div class="cfg-field"><label>Search Queries (hardcoded)</label>
+          <div style="font-size:12px;color:var(--text2);line-height:1.8;padding:8px 0;">
+            ai agent, llm tool, autonomous agent, agentic workflow, AI automation, generative AI
+          </div>
+          <div class="cfg-hint">Global results — PH doesn't expose maker location. Filter India manually.</div>
+        </div>
+      </div>
+
+      <div class="cfg-actions">
+        <button class="btn btn-ghost" onclick="saveConfig()">Save</button>
+        <button class="btn btn-ghost" onclick="resetConfig()">Reset</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="toolbar">
+    <button class="btn btn-ghost active" data-source="all" onclick="setSource('all',this)">All</button>
+    <button class="btn btn-ghost" data-source="github" onclick="setSource('github',this)">GitHub</button>
+    <button class="btn btn-ghost" data-source="hn" onclick="setSource('hn',this)">HN</button>
+    <button class="btn btn-ghost" data-source="ph" onclick="setSource('ph',this)">Product Hunt</button>
+    <button class="btn btn-ghost" data-source="manual" onclick="setSource('manual',this)">Manual</button>
+    <div class="toolbar-sep"></div>
+    <button class="btn btn-scan" id="scan-btn" onclick="startScan()">
+      <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><circle cx="6" cy="6" r="5" stroke="white" stroke-width="1.5"/><line x1="10" y1="10" x2="13" y2="13" stroke="white" stroke-width="1.5" stroke-linecap="round"/></svg> <span id="scan-label">Scan All</span>
+    </button>
+    <button class="btn btn-green" onclick="openImport()">+ Import</button>
+    <div class="toolbar-sep"></div>
+    <button class="btn btn-ghost active" id="view-cards" onclick="setView('cards')">Cards</button>
+    <button class="btn btn-ghost" id="view-table" onclick="setView('table')">Table</button>
+    <div class="toolbar-right">
+      <input class="filter-input" type="text" placeholder="Search name, company, keyword..." oninput="filterText(this.value)">
+      <button class="btn btn-ghost" onclick="exportCSV()">Export CSV</button>
+      <button class="btn btn-ghost" onclick="clearHistory()">Clear History</button>
+    </div>
+  </div>
+
+  <div class="progress-wrap" id="progress-wrap"><div class="progress-inner"><div class="progress-text" id="progress-text">Ready</div><div class="progress-track"><div class="progress-fill" id="progress-fill" style="width:0%"></div></div></div></div>
+
+  <div class="results" id="results-area">
+    <div class="empty-state" id="empty-state"><h3>Ready to scout</h3><p>Scan GitHub + HN for AI agent founders, or import profiles manually from X / StealthCoSpy.</p></div>
+    <div class="card-grid" id="card-grid" style="display:none"></div>
+    <div class="table-wrap" id="table-wrap" style="display:none">
+      <table><thead><tr>
+        <th onclick="sortBy('source')">Source</th><th onclick="sortBy('name')">Name</th><th onclick="sortBy('company')">Company</th><th>Bio</th><th onclick="sortBy('location')">Location</th><th>Signals</th><th>Link</th>
+      </tr></thead><tbody id="table-body"></tbody></table>
+    </div>
+  </div>
+</div>
+
+<!-- Import Modal -->
+<div class="modal-overlay" id="import-modal">
+  <div class="modal">
+    <h2>Import Founders from X / Manual</h2>
+    <p>Paste tweets, thread content, or add founders manually. Handles bulk paste — just dump everything in.</p>
+
+    <div style="display:flex;gap:8px;margin-bottom:12px;">
+      <button class="btn btn-ghost active" id="tab-paste" onclick="setImportTab('paste')">Paste Tweets / Text</button>
+      <button class="btn btn-ghost" id="tab-manual" onclick="setImportTab('manual')">Quick Add</button>
+    </div>
+
+    <!-- Paste Tab -->
+    <div id="import-tab-paste">
+      <textarea id="import-text" placeholder="Paste one or many tweets here. Examples:
+
+Pranav Singh Pundir comes out of stealth mode and debuts Mextropic AI
+Mextropic AI is building India's first applied AI research lab powering Enterprise General Intelligence.
+Location: India
+http://mextropic.ai
+
+Ayush Jain comes out of stealth mode and debuts RiskDora Labs
+RiskDora Labs is building AI-powered business risk intelligence.
+Location: Bengaluru, India
+https://riskdora.com
+
+Sandesh Manik is now building in Stealth Mode!
+Building autonomous AI agents for enterprise workflows.
+Location: Mumbai"></textarea>
+      <div class="import-hint">
+        Auto-detects tweet boundaries. Supported patterns:<br>
+        • "[Name] comes out of stealth mode and debuts [Company]"<br>
+        • "[Name] is now building in stealth mode"<br>
+        • "[Name] launches/introduces/unveils/debuts [Company]"<br>
+        • Structured: Name: / Company: / Bio: / Location: / URL:<br>
+        • Separate entries with blank lines, ---, or just paste a whole thread
+      </div>
+      <div id="preview-area" style="display:none;margin-top:12px;max-height:200px;overflow-y:auto;border:1px solid var(--border2);border-radius:8px;padding:12px;background:var(--bg);">
+        <div style="font-size:12px;font-weight:600;color:var(--text2);margin-bottom:8px;">Preview (<span id="preview-count">0</span> founders detected)</div>
+        <div id="preview-list"></div>
+      </div>
+      <div class="modal-actions">
+        <button class="btn btn-ghost" onclick="previewImport()">Preview</button>
+        <button class="btn btn-ghost" onclick="closeImport()">Cancel</button>
+        <button class="btn btn-green" onclick="doImport()">Import & Score</button>
+      </div>
+    </div>
+
+    <!-- Quick Add Tab -->
+    <div id="import-tab-manual" style="display:none;">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;">
+        <div class="cfg-field"><label>Name *</label><input type="text" id="qa-name" placeholder="Pranav Singh"></div>
+        <div class="cfg-field"><label>Company</label><input type="text" id="qa-company" placeholder="Mextropic AI"></div>
+        <div class="cfg-field"><label>What they build</label><input type="text" id="qa-bio" placeholder="AI agents for enterprise..."></div>
+        <div class="cfg-field"><label>Location</label><input type="text" id="qa-location" placeholder="India"></div>
+        <div class="cfg-field"><label>Website / URL</label><input type="text" id="qa-url" placeholder="https://..."></div>
+        <div class="cfg-field"><label>X Handle</label><input type="text" id="qa-handle" placeholder="@handle"></div>
+      </div>
+      <div class="modal-actions">
+        <button class="btn btn-ghost" onclick="closeImport()">Cancel</button>
+        <button class="btn btn-green" onclick="doQuickAdd()">Add Founder</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ===================== STATE =====================
+let allResults = [], filteredResults = [], savedResults = [], seenProfiles = {};
+let currentSource = 'all', currentQuery = '', sortField = 'score', sortDir = -1, viewMode = 'cards', isScanning = false;
+
+// ===================== CONFIG =====================
+const DEFAULT_CONFIG = {
+  location:'India', bioKeywords:'AI agent, LLM, autonomous agent, agentic, generative AI, GenAI, foundation model, RAG, fine-tuning, AI infra, AI startup, AI founder',
+  minFollowers:5, hnKeywords:'AI agent, LLM, autonomous agent, RAG, AI India, agentic workflow, AI copilot',
+  hnMinPoints:1, exclude:'raised, series A, series B, funded, $M, VC-backed, YC W, YC S', topN:50,
+  strongBg:'IIT, IISC, BITS, NIT, ex-Google, ex-Amazon, ex-Microsoft, ex-Flipkart, ex-Razorpay, ex-Uber, ex-DeepMind, ex-OpenAI, FAANG, Stanford, MIT, Berkeley'
+};
+
+function loadConfig() {
+  try { const s=localStorage.getItem('scout_config'); if(s){const c=JSON.parse(s);
+    document.getElementById('cfg-location').value=c.location||DEFAULT_CONFIG.location;
+    document.getElementById('cfg-exclude').value=c.exclude||DEFAULT_CONFIG.exclude;
+    document.getElementById('cfg-top-n').value=c.topN??DEFAULT_CONFIG.topN;
+    document.getElementById('cfg-strong-bg').value=c.strongBg||DEFAULT_CONFIG.strongBg;
+    if(c.hnWindowMonths) document.getElementById('cfg-hn-window').value=c.hnWindowMonths;
+    if(c.phWindowDays) document.getElementById('cfg-ph-window').value=c.phWindowDays;
+    if(c.ghTags) document.getElementById('cfg-gh-tags').value=c.ghTags;
+    if(c.ghMinStars) document.getElementById('cfg-gh-min-stars').value=c.ghMinStars;
+    if(c.ghMaxStars) document.getElementById('cfg-gh-max-stars').value=c.ghMaxStars;
+    document.getElementById('cfg-gh-active-only').checked = c.ghActiveOnly ?? true;
+  }} catch(e){}
+  try { const t=localStorage.getItem('scout_gh_token'); if(t){document.getElementById('gh-token').value=t; updateTokenStatus();}} catch(e){}
+  try { const s=localStorage.getItem('scout_seen'); if(s) seenProfiles=JSON.parse(s); } catch(e){}
+  try { const r=localStorage.getItem('scout_results'); if(r){savedResults=JSON.parse(r);allResults=[...savedResults];applyFilters();updateCounts();if(savedResults.length)document.getElementById('empty-state').style.display='none';}} catch(e){}
+}
+
+function setCfgTab(tab, btn) {
+  document.querySelectorAll('.cfg-tab').forEach(el=>el.style.display='none');
+  document.getElementById('cfg-tab-'+tab).style.display='grid';
+  document.querySelectorAll('[data-cfg]').forEach(b=>b.classList.toggle('active',b.dataset.cfg===tab));
+}
+
+function getConfig() { return {
+  location: document.getElementById('cfg-location').value.trim(),
+  bioKeywords: 'AI agent, LLM, autonomous agent, agentic, generative AI, GenAI, foundation model, RAG, fine-tuning, AI infra, AI startup, AI founder',
+  minFollowers: 0,
+  hnKeywords: 'AI agent, LLM, autonomous agent, RAG, AI India, agentic workflow, AI copilot',
+  hnMinPoints: 1,
+  hnWindowMonths: parseInt(document.getElementById('cfg-hn-window').value) || 6,
+  phWindowDays: parseInt(document.getElementById('cfg-ph-window').value) || 30,
+  ghTags: document.getElementById('cfg-gh-tags').value.trim(),
+  ghMinStars: parseInt(document.getElementById('cfg-gh-min-stars').value) || 3,
+  ghMaxStars: parseInt(document.getElementById('cfg-gh-max-stars').value) || 500,
+  ghActiveOnly: document.getElementById('cfg-gh-active-only').checked,
+  exclude: document.getElementById('cfg-exclude').value.trim(),
+  topN: parseInt(document.getElementById('cfg-top-n').value) || 50,
+  strongBg: document.getElementById('cfg-strong-bg').value.trim()
+}; }
+
+function saveConfig() { localStorage.setItem('scout_config',JSON.stringify(getConfig())); const t=document.getElementById('gh-token').value.trim(); if(t)localStorage.setItem('scout_gh_token',t);else localStorage.removeItem('scout_gh_token'); showToast('Filters saved'); }
+function resetConfig() { document.getElementById('cfg-location').value=DEFAULT_CONFIG.location; document.getElementById('cfg-exclude').value=DEFAULT_CONFIG.exclude; document.getElementById('cfg-top-n').value=DEFAULT_CONFIG.topN; document.getElementById('cfg-strong-bg').value=DEFAULT_CONFIG.strongBg; document.getElementById('cfg-hn-window').value='6'; document.getElementById('cfg-ph-window').value='30'; document.getElementById('cfg-gh-tags').value='founder, co-founder, cto, ceo, building, shipped, bootstrapped, stealth, launching, indie hacker'; document.getElementById('cfg-gh-min-stars').value='3'; document.getElementById('cfg-gh-max-stars').value='500'; document.getElementById('cfg-gh-active-only').checked=true; localStorage.removeItem('scout_config'); showToast('Reset'); }
+
+// ===================== TOKEN =====================
+document.getElementById('gh-token').addEventListener('input',()=>{ updateTokenStatus(); const t=document.getElementById('gh-token').value.trim(); if(t)localStorage.setItem('scout_gh_token',t);else localStorage.removeItem('scout_gh_token'); });
+function updateTokenStatus(){ const t=document.getElementById('gh-token').value.trim(),el=document.getElementById('token-status'); if(t&&(t.startsWith('ghp_')||t.startsWith('github_pat_'))){el.textContent='5,000 req/hr';el.className='token-status ok';}else if(t){el.textContent='Unrecognized format';el.className='token-status limited';}else{el.textContent='60 req/hr';el.className='token-status limited';} }
+function getGHHeaders(){ const h={'Accept':'application/vnd.github.v3+json'},t=document.getElementById('gh-token').value.trim(); if(t)h['Authorization']=`Bearer ${t}`; return h; }
+
+// ===================== SCORING =====================
+function parseList(s){ return s.split(',').map(x=>x.trim().toLowerCase()).filter(Boolean); }
+
+const EMPLOYEE_SIGNALS=['software engineer at','sde at','developer at','engineer at','intern at','student at','studying at','pursuing','open source enthusiast','contributor at','devops','sre at','data scientist at','ml engineer at','analyst at','consultant at','freelancer','open to work','looking for','seeking opportunities','available for hire'];
+
+const AI_TERMS=['ai','artificial intelligence','machine learning','ml','llm','large language model','gpt','genai','generative ai','gen ai','agent','agentic','autonomous','rag','retrieval augmented','fine-tuning','fine tuning','foundation model','transformer','nlp','natural language','computer vision','deep learning','neural','diffusion','openai','anthropic','langchain','llamaindex','vector database','embedding','inference','prompt','chatbot','copilot'];
+
+function hasAISignal(p){ const t=((p.bio||'')+(p.company||'')+(p._repoTopics||'')).toLowerCase(); return AI_TERMS.some(x=>t.includes(x)); }
+
+function scoreProfile(p, cfg) {
+  let s=0; const text=((p.bio||'')+' '+(p.company||'')).toLowerCase();
+  const icpKw=parseList(cfg.bioKeywords), fundedKw=parseList(cfg.exclude), strongBg=parseList(cfg.strongBg);
+  let kw=0; icpKw.forEach(k=>{if(text.includes(k))kw+=8}); s+=Math.min(kw,30);
+  let bg=0; strongBg.forEach(k=>{if(text.includes(k))bg+=12}); s+=Math.min(bg,24);
+  if(text.match(/\bai\b/))s+=10; if(text.match(/\bagent/))s+=6; if(text.match(/\bsaas\b/))s+=6;
+  if(text.match(/\bllm\b/)||text.includes('large language'))s+=6; if(text.match(/\bml\b/)||text.includes('machine learning'))s+=4;
+  if(text.match(/\bgenai\b/)||text.includes('gen ai')||text.includes('generative'))s+=6;
+  if(p.blog)s+=10; if(p.blog&&p.blog.match(/\.(ai|io|co|app|dev|tech)$/i))s+=5;
+  if(p.created&&new Date(p.created)>new Date('2024-01-01'))s+=8;
+  if(p.followers>0)s+=Math.min(Math.log10(p.followers)*5,15);
+  if(p._recentCommits>20)s+=15;else if(p._recentCommits>5)s+=10;else if(p._recentCommits>0)s+=5;else if(p._recentCommits===0&&p.source==='github')s-=10;
+  if(p._topStars>500)s+=20;else if(p._topStars>100)s+=15;else if(p._topStars>50)s+=10;else if(p._topStars>10)s+=5;
+  if(p._hasProductRepo)s+=10; if(p._hasOrg)s+=8;
+  if(p.source==='hn'&&p.points)s+=Math.min(p.points/5,20);
+  if(p.source==='ph'){s+=12;if(p._phVotes>50)s+=15;else if(p._phVotes>20)s+=10;else if(p._phVotes>5)s+=5;}
+  if(p._isIndiaLinked)s+=10; // Boost India-linked from repo search
+  if(p.source==='manual')s+=15; // Manual imports get a base boost — you curated them
+  fundedKw.forEach(k=>{if(text.includes(k))s-=20});
+  let emp=false; EMPLOYEE_SIGNALS.forEach(x=>{if(text.includes(x)){s-=15;emp=true;}});
+  if(emp&&(text.match(/\bfounder\b/)||text.includes('stealth')))s+=10;
+  if(p._onlyTutorials)s-=10;
+  return Math.max(0,Math.min(100,Math.round(s)));
+}
+
+function extractSignals(p, cfg) {
+  const sigs=[], text=((p.bio||'')+' '+(p.company||'')).toLowerCase(), strongBg=parseList(cfg.strongBg);
+  if(text.match(/\bfounder\b/))sigs.push('Founder'); if(text.includes('stealth'))sigs.push('Stealth');
+  if(text.match(/\bbuilding\b/))sigs.push('Building'); if(text.match(/\bcto\b/)||text.match(/\bceo\b/))sigs.push('C-Level');
+  if(text.includes('bootstrapped'))sigs.push('Bootstrapped'); if(text.match(/\bai\b/i))sigs.push('AI');
+  if(text.match(/\bagent/))sigs.push('Agents'); if(text.match(/\bllm\b/i)||text.includes('large language'))sigs.push('LLM');
+  if(text.match(/\bgenai\b/i)||text.includes('gen ai'))sigs.push('GenAI');
+  if(text.includes('shipped')||text.includes('launched'))sigs.push('Shipped'); if(text.match(/\bsaas\b/i))sigs.push('SaaS');
+  if(p._recentCommits>5)sigs.push('Active'); if(p._recentCommits===0&&p.source==='github')sigs.push('Inactive');
+  if(p._topStars>50)sigs.push('★'+p._topStars); if(p._hasProductRepo)sigs.push('Product');
+  if(p._hasOrg)sigs.push('Has Org'); if(p.blog)sigs.push('Website');
+  if(p.source==='manual')sigs.push('Imported');
+  EMPLOYEE_SIGNALS.forEach(x=>{if(text.includes(x))sigs.push('Employee')});
+  strongBg.forEach(k=>{if(text.includes(k))sigs.push(k.replace(/^ex-/i,'').toUpperCase())});
+  if(p.source==='hn'){sigs.push('Show HN');if(p.points>50)sigs.push('HN Popular');}
+  if(p.source==='ph'){sigs.push('Product Hunt');if(p._phVotes>50)sigs.push('PH Popular');}
+  if(p._isIndiaLinked)sigs.push('India-linked');
+  if(p._foundRepo)sigs.push('Has Repo');
+  if(p._matchedTags&&p._matchedTags.length)p._matchedTags.forEach(t=>sigs.push(t.charAt(0).toUpperCase()+t.slice(1)));
+  return[...new Set(sigs)];
+}
+
+// ===================== IMPORT (StealthCoSpy / Manual / Quick Add) =====================
+function openImport(){ document.getElementById('import-modal').classList.add('show'); document.getElementById('preview-area').style.display='none'; }
+function closeImport(){ document.getElementById('import-modal').classList.remove('show'); }
+function setImportTab(tab){
+  document.getElementById('import-tab-paste').style.display=tab==='paste'?'block':'none';
+  document.getElementById('import-tab-manual').style.display=tab==='manual'?'block':'none';
+  document.getElementById('tab-paste').classList.toggle('active',tab==='paste');
+  document.getElementById('tab-manual').classList.toggle('active',tab==='manual');
+}
+
+// Tweet boundary patterns — these mark the START of a new founder entry
+const TWEET_STARTS = [
+  /^(.{2,50}?)\s+comes?\s+out\s+of\s+stealth\s*(?:mode)?\s+and\s+debuts?\s+(.+?)(?:[\n!.]|$)/i,
+  /^(.{2,50}?)\s+(?:launches|introduces|unveils|debuts)\s+(.+?)(?:[\n!.,]|$)/i,
+  /^(.{2,50}?)\s+is\s+now\s+building\s+in\s+stealth/i,
+  /^(.{2,50}?)\s+is\s+building\s+(.+?)\s+in\s+stealth/i,
+  /^(.{2,50}?)\s+just\s+(?:launched|shipped|released)\s+(.+?)(?:[\n!.,]|$)/i,
+  /^(.{2,50}?)\s+(?:founded|co-?founded|started)\s+(.+?)(?:[\n!.,]|$)/i,
+];
+
+function smartSplitTweets(raw) {
+  // First try splitting by --- or triple newlines (explicit separators)
+  const explicitBlocks = raw.split(/(?:\n\s*---\s*\n|\n{3,})/).filter(b=>b.trim());
+  if (explicitBlocks.length > 1) return explicitBlocks.map(b=>b.trim());
+
+  // Try splitting by double newlines
+  const doubleNL = raw.split(/\n{2,}/).filter(b=>b.trim());
+
+  // Check if each double-NL block starts with a tweet pattern
+  // If so, we need to merge consecutive lines that belong to the same tweet
+  const merged = [];
+  let current = '';
+  for (const block of doubleNL) {
+    const firstLine = block.split('\n')[0].trim();
+    const isTweetStart = TWEET_STARTS.some(rx => rx.test(firstLine)) || /^Name:\s/mi.test(block);
+    if (isTweetStart && current) {
+      merged.push(current.trim());
+      current = block;
+    } else if (isTweetStart && !current) {
+      current = block;
+    } else {
+      // Continuation of previous tweet (description, location, url lines)
+      current += '\n\n' + block;
+    }
+  }
+  if (current) merged.push(current.trim());
+
+  // If smart merge produced results, use them; otherwise fall back to double-NL blocks
+  return merged.length > 0 ? merged : doubleNL;
+}
+
+function parseSingleBlock(lines) {
+  let name='', company='', bio='', location='', url='', xHandle='';
+
+  // Try structured format: Name: / Company: / etc.
+  const nameMatch = lines.match(/^Name:\s*(.+)/mi);
+  if (nameMatch) {
+    name = nameMatch[1].trim();
+    const cm = lines.match(/^Company:\s*(.+)/mi); company = cm ? cm[1].trim() : '';
+    const bm = lines.match(/^Bio:\s*(.+)/mi); bio = bm ? bm[1].trim() : '';
+    const lm = lines.match(/^Location:\s*(.+)/mi); location = lm ? lm[1].trim() : '';
+    const um = lines.match(/^URL:\s*(.+)/mi); url = um ? um[1].trim() : '';
+    const hm = lines.match(/^(?:Handle|Twitter|X):\s*@?(.+)/mi); xHandle = hm ? hm[1].trim() : '';
+    return { name, company, bio, location, url, xHandle };
+  }
+
+  // Try all tweet patterns
+  for (const rx of TWEET_STARTS) {
+    const m = lines.match(rx);
+    if (m) {
+      name = m[1].trim().replace(/^[@🚀🔥💡✨⚡]+\s*/, ''); // strip emojis/@ from start
+      company = m[2] ? m[2].trim().replace(/[.!,]+$/, '') : 'Stealth';
+      break;
+    }
+  }
+
+  // Fallback: first line as name if short enough
+  if (!name) {
+    const firstLine = lines.split('\n')[0].trim();
+    if (firstLine.length < 80 && !firstLine.startsWith('http')) {
+      name = firstLine;
+    }
+  }
+
+  // Extract metadata from remaining text
+  const locLine = lines.match(/(?:Location|Based in|📍|HQ):\s*(.+)/i);
+  if (locLine) location = locLine[1].trim();
+  // Detect India locations in text even without Location: prefix
+  if (!location) {
+    const indiaLocs = ['india','bangalore','bengaluru','mumbai','delhi','hyderabad','pune','chennai','kolkata','noida','gurgaon','gurugram','ncr','jaipur','ahmedabad','kochi','chandigarh'];
+    const lowerText = lines.toLowerCase();
+    for (const loc of indiaLocs) { if (lowerText.includes(loc)) { location = loc.charAt(0).toUpperCase()+loc.slice(1)+', India'; break; } }
+  }
+
+  // Extract URL
+  const urlLine = lines.match(/https?:\/\/[^\s)]+/);
+  if (urlLine) url = urlLine[0].trim().replace(/[.,;]+$/, '');
+
+  // Extract X handle
+  const handleMatch = lines.match(/@([A-Za-z0-9_]{1,30})/);
+  if (handleMatch && !['StealthCoSpy','stealthcospy'].includes(handleMatch[1])) xHandle = handleMatch[1];
+
+  // Extract background
+  const bgLine = lines.match(/(?:Background|Previously|Ex-|Former):\s*(.+)/i);
+  const bgText = bgLine ? bgLine[1].trim() : '';
+
+  // Build bio from description lines
+  bio = lines
+    .replace(/^.+(?:comes?\s+out|is\s+now|launches|introduces|unveils|debuts|just\s+launched|founded|co-?founded).+$/mi, '') // remove opener
+    .replace(/(?:Location|Based in|📍|HQ|Background|Previously):.*$/gmi, '')
+    .replace(/Connect on LinkedIn.*$/gmi, '')
+    .replace(/https?:\/\/[^\s]+/g, '')
+    .replace(/@[A-Za-z0-9_]+/g, '')
+    .trim()
+    .replace(/\n+/g, ' ')
+    .substring(0, 300);
+  if (bgText && !bio.toLowerCase().includes(bgText.toLowerCase())) bio = bgText + ' — ' + bio;
+
+  return { name, company, bio, location, url, xHandle };
+}
+
+function parseImportText(raw) {
+  const profiles = [];
+  const blocks = smartSplitTweets(raw);
+
+  for (const block of blocks) {
+    const { name, company, bio, location, url, xHandle } = parseSingleBlock(block.trim());
+
+    if (name && name.length > 1 && name.length < 80) {
+      const username = xHandle || name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+      profiles.push({
+        source: 'manual', name, username,
+        company: company || '', bio: bio || '', location: location || '', url: url || '',
+        followers: 0, repos: 0, points: 0,
+        created: new Date().toISOString(), blog: url || '',
+        _recentCommits: undefined, _topStars: 0, _hasProductRepo: false, _hasOrg: false, _onlyTutorials: false,
+        _repoTopics: (company + ' ' + bio).toLowerCase().includes('agent') ? 'ai agent' : ''
+      });
+    }
+  }
+  return profiles;
+}
+
+function previewImport() {
+  const raw = document.getElementById('import-text').value.trim();
+  if (!raw) { showToast('Paste some content first'); return; }
+  const profiles = parseImportText(raw);
+  const area = document.getElementById('preview-area');
+  const list = document.getElementById('preview-list');
+  document.getElementById('preview-count').textContent = profiles.length;
+
+  if (!profiles.length) {
+    list.innerHTML = '<div style="color:var(--red);font-size:12px;">No founders detected. Try a different format.</div>';
+    area.style.display = 'block';
+    return;
+  }
+
+  list.innerHTML = profiles.map((p, i) => `
+    <div style="padding:6px 0;border-bottom:1px solid var(--border);font-size:12px;display:flex;gap:8px;align-items:center;">
+      <span style="color:var(--green);font-weight:700;width:20px;">${i+1}</span>
+      <div style="flex:1;">
+        <strong style="color:var(--text);">${esc(p.name)}</strong>
+        ${p.company ? `<span style="color:var(--text3);"> — ${esc(p.company)}</span>` : ''}
+        ${p.location ? `<span style="color:var(--text3);"> · ${esc(p.location)}</span>` : ''}
+        ${p.url ? `<span style="color:var(--accent2);"> · ${esc(p.url.substring(0,40))}</span>` : ''}
+      </div>
+    </div>`).join('');
+  area.style.display = 'block';
+}
+
+function doImport() {
+  const raw = document.getElementById('import-text').value.trim();
+  if (!raw) return;
+  const profiles = parseImportText(raw);
+  if (!profiles.length) { showToast('No profiles parsed — check format'); return; }
+  mergeAndSave(profiles);
+  closeImport();
+  document.getElementById('import-text').value = '';
+  document.getElementById('preview-area').style.display = 'none';
+  showToast(`Imported ${profiles.length} founder${profiles.length>1?'s':''}`);
+}
+
+function doQuickAdd() {
+  const name = document.getElementById('qa-name').value.trim();
+  if (!name) { showToast('Name is required'); return; }
+  const handle = document.getElementById('qa-handle').value.trim().replace(/^@/, '');
+  const url = document.getElementById('qa-url').value.trim();
+  const company = document.getElementById('qa-company').value.trim();
+  const bio = document.getElementById('qa-bio').value.trim();
+  const p = {
+    source: 'manual', name, username: handle || name.toLowerCase().replace(/[^a-z0-9]+/g, '-'),
+    company, bio, location: document.getElementById('qa-location').value.trim(),
+    url, followers: 0, repos: 0, points: 0,
+    created: new Date().toISOString(), blog: url,
+    _recentCommits: undefined, _topStars: 0, _hasProductRepo: false, _hasOrg: false, _onlyTutorials: false,
+    _repoTopics: (company + ' ' + bio).toLowerCase().includes('agent') ? 'ai agent' : ''
+  };
+  mergeAndSave([p]);
+  // Clear fields
+  ['qa-name','qa-company','qa-bio','qa-location','qa-url','qa-handle'].forEach(id=>document.getElementById(id).value='');
+  showToast(`Added ${name}`);
+}
+
+function mergeAndSave(profiles) {
+  const cfg = getConfig();
+  profiles.forEach(p => {
+    p.score = scoreProfile(p, cfg);
+    p.signals = extractSignals(p, cfg);
+    p.isNew = !seenProfiles[p.username];
+  });
+  allResults.push(...profiles);
+  // Deduplicate
+  const deduped = {};
+  allResults.forEach(r => { if (!deduped[r.username] || r.score > deduped[r.username].score) deduped[r.username] = r; });
+  allResults = Object.values(deduped).sort((a, b) => b.score - a.score);
+  // Persist
+  const now = Date.now();
+  allResults.forEach(r => { if (!seenProfiles[r.username]) seenProfiles[r.username] = now; });
+  savedResults = [...allResults];
+  try { localStorage.setItem('scout_results', JSON.stringify(savedResults)); localStorage.setItem('scout_seen', JSON.stringify(seenProfiles)); } catch(e) {}
+  applyFilters(); updateCounts();
+}
+
+// ===================== DEEP ENRICHMENT =====================
+const NOISE_REPOS=['dotfiles','config','vimrc','awesome-','leetcode','interview','tutorial','learning-','course-','practice','notes','resume','portfolio-template','hackathon'];
+
+async function enrichProfile(username, headers) {
+  const e={_recentCommits:0,_topStars:0,_hasProductRepo:false,_hasOrg:false,_onlyTutorials:true,_repoTopics:''};
+  try {
+    const [repos,events,orgs]=await Promise.all([
+      fetch(`https://api.github.com/users/${username}/repos?sort=stars&per_page=6&direction=desc`,{headers}).then(r=>r.ok?r.json():[]).catch(()=>[]),
+      fetch(`https://api.github.com/users/${username}/events/public?per_page=30`,{headers}).then(r=>r.ok?r.json():[]).catch(()=>[]),
+      fetch(`https://api.github.com/users/${username}/orgs?per_page=5`,{headers}).then(r=>r.ok?r.json():[]).catch(()=>[])
+    ]);
+    if(Array.isArray(repos)){
+      const topics=[]; repos.forEach(r=>{if(r.topics)topics.push(...r.topics);topics.push(r.name||'',r.description||'');}); e._repoTopics=topics.join(' ');
+      for(const r of repos){if(r.fork)continue;const nm=(r.name||'').toLowerCase(),desc=(r.description||'').toLowerCase();
+        if(r.stargazers_count>e._topStars)e._topStars=r.stargazers_count;
+        const isNoise=NOISE_REPOS.some(n=>nm.includes(n))||desc.includes('tutorial')||desc.includes('learning')||desc.includes('leetcode');
+        if(!isNoise&&!r.fork){e._onlyTutorials=false;if((!!r.homepage&&desc.length>20)||(r.stargazers_count>3&&r.pushed_at&&(Date.now()-new Date(r.pushed_at))<90*864e5)||r.stargazers_count>20)e._hasProductRepo=true;}
+      } if(!repos.length)e._onlyTutorials=false;
+    }
+    if(Array.isArray(events)){const cutoff=Date.now()-90*864e5;e._recentCommits=events.filter(x=>x.type==='PushEvent'&&new Date(x.created_at)>cutoff).length;}
+    if(Array.isArray(orgs)&&orgs.length)e._hasOrg=true;
+  } catch(err){console.error('Enrich error',username,err);} return e;
+}
+
+// ===================== GITHUB SEARCH (Repo-based) =====================
+// India detection for profiles without location set
+const INDIA_CITIES=['india','bangalore','bengaluru','mumbai','delhi','hyderabad','pune','chennai','kolkata','noida','gurgaon','gurugram','jaipur','ahmedabad','kochi','chandigarh','lucknow','ncr','indore'];
+const INDIA_INSTITUTIONS=['iit','iisc','bits pilani','nit ','isb ','iiit','manipal','vit ','srm ','amity','anna university'];
+function dateDaysAgo(days){ const d=new Date(Date.now()-days*864e5); return d.toISOString().slice(0,10); }
+
+function hasIndiaSignal(user) {
+  const text = ((user.location||'')+(user.bio||'')+(user.company||'')).toLowerCase();
+  return INDIA_CITIES.some(c=>text.includes(c)) || INDIA_INSTITUTIONS.some(c=>text.includes(c));
+}
+
+async function searchGitHub(cfg) {
+  const results=[], headers=getGHHeaders(), hasToken=!!document.getElementById('gh-token').value.trim();
+  const seen=new Set();
+
+  // Build repo queries using configured star range
+  const minS = cfg.ghMinStars || 3, maxS = cfg.ghMaxStars || 500;
+  const starRange = `stars:${minS}..${maxS}`;
+  const recentCutoff = dateDaysAgo(120);
+  const repoQueries = [
+    `ai+agent+${starRange}+pushed:>${recentCutoff}+NOT+awesome+NOT+tutorial+NOT+course`,
+    `llm+agent+${starRange}+pushed:>${recentCutoff}+NOT+awesome+NOT+list`,
+    `agentic+workflow+${starRange}+pushed:>${recentCutoff}`,
+    `autonomous+agent+AI+${starRange}+pushed:>${recentCutoff}`,
+    `rag+pipeline+${starRange}+pushed:>${recentCutoff}+NOT+tutorial`,
+    `ai+agent+framework+${starRange}+pushed:>${recentCutoff}`,
+    `langchain+agent+stars:${minS}..300+pushed:>${recentCutoff}`,
+    `multi+agent+${starRange}+pushed:>${recentCutoff}+NOT+awesome`,
+    `generative+ai+saas+stars:${minS}..300+pushed:>${recentCutoff}`,
+    `mcp+server+ai+stars:${minS}..300+pushed:>${recentCutoff}`,
+  ];
+
+  // Profile tags for filtering — owner must have at least one in bio
+  const profileTags = (cfg.ghTags || 'founder, co-founder, cto, ceo, building, shipped, bootstrapped, stealth').split(',').map(t=>t.trim().toLowerCase()).filter(Boolean);
+
+  // Also keep a few user-search queries for India-based founders with AI bios
+  const userQueries = [
+    `location:${cfg.location}+type:user+"AI agent"+"founder"`,
+    `location:${cfg.location}+type:user+"AI"+"building"+"agent"`,
+    `location:${cfg.location}+type:user+"LLM"+"founder"`,
+    `location:${cfg.location}+type:user+"GenAI"+"building"`,
+  ];
+
+  const repoPages = hasToken ? 3 : 2;
+  const userPages = hasToken ? 2 : 1;
+  const searchDelay = hasToken ? 1600 : 4200;
+  const totalQueries = (repoQueries.length * repoPages) + (userQueries.length * userPages);
+  let qIdx = 0;
+
+  // Phase 1: Repo-based search (primary)
+  for (let i=0; i<repoQueries.length; i++) {
+    if (!isScanning) break;
+    for (let page=1; page<=repoPages; page++) {
+      if (!isScanning) break;
+      qIdx++;
+      updateProgress(`GitHub Repos: ${qIdx}/${totalQueries}`, (qIdx/totalQueries)*35);
+      try {
+        const resp = await fetch(`https://api.github.com/search/repositories?q=${repoQueries[i]}&sort=updated&per_page=100&page=${page}`, {headers});
+        if (resp.status===403||resp.status===429) { await handleRateLimit(resp, qIdx, totalQueries); page--; continue; }
+        const data = await resp.json();
+        if (!data.items || !data.items.length) break;
+
+        // Get unique owners (skip orgs with huge follower counts)
+        const owners = [];
+        for (const repo of data.items) {
+          const login = repo.owner?.login;
+          if (!login || seen.has(login)) continue;
+          seen.add(login);
+          owners.push({ login, repo });
+        }
+
+        // Fetch owner profiles in batches of 5
+        for (let b=0; b<owners.length; b+=5) {
+          if (!isScanning) break;
+          const chunk = owners.slice(b, b+5);
+          const profiles = await Promise.all(chunk.map(({login}) =>
+            fetch(`https://api.github.com/users/${login}`, {headers}).then(r=>r.ok?r.json():null).catch(()=>null)
+          ));
+
+          for (let j=0; j<profiles.length; j++) {
+            const p = profiles[j];
+            if (!p) continue;
+            // Skip big orgs
+            if (p.type==='Organization' && (p.followers||0)>200) continue;
+            const repo = chunk[j].repo;
+
+            // Check profile tags — bio, company, or repo description must contain at least one tag
+            const profileText = ((p.bio||'')+(p.company||'')+(repo.description||'')).toLowerCase();
+            const hasTag = profileTags.some(tag => profileText.includes(tag));
+            const matchedTags = profileTags.filter(tag => profileText.includes(tag));
+
+          // Noise detection: treat tutorial/learning/doc-only repos as non-builder signals.
+          const nm=(repo.name||'').toLowerCase();
+          const desc=(repo.description||'').toLowerCase();
+          const isNoise = NOISE_REPOS.some(n=>nm.includes(n)) || desc.includes('tutorial') || desc.includes('learning') || desc.includes('leetcode');
+          const cutoff90 = Date.now() - 90*864e5;
+          const pushedTs = repo.pushed_at ? new Date(repo.pushed_at).getTime() : 0;
+          const recentCommits = (Number.isFinite(pushedTs) && pushedTs > cutoff90) ? 1 : 0;
+          const hasProductRepo = !isNoise && !!(repo.homepage && (repo.description||'').length > 15);
+
+            results.push({
+              _matchedTags: matchedTags,
+              _tagFiltered: hasTag,
+              source:'github', name:p.name||p.login, username:p.login,
+              bio: p.bio || '',
+              company: p.company || '',
+              location: p.location || '',
+              followers: p.followers||0, repos: p.public_repos||0,
+              created: p.created_at, url: p.html_url, points:0,
+              avatar: p.avatar_url, blog: p.blog||'',
+            _recentCommits: recentCommits,
+            _topStars: repo.stargazers_count||0,
+            _hasProductRepo: hasProductRepo,
+              _hasOrg: false,
+            _onlyTutorials: isNoise,
+              _repoTopics: (repo.topics||[]).join(' ') + ' ' + (repo.description||''),
+              _foundRepo: repo.full_name,
+              _foundRepoDesc: (repo.description||'').substring(0, 120),
+              _isIndiaLinked: hasIndiaSignal(p),
+            });
+          }
+          if (b+5 < owners.length) await sleep(hasToken ? 100 : 400);
+        }
+        liveUpdate(getConfig());
+        await sleep(searchDelay);
+      } catch(e) { console.error('GH repo search error', e); }
+    }
+  }
+
+  // Phase 2: User-search (supplementary, India-specific)
+  for (let i=0; i<userQueries.length; i++) {
+    if (!isScanning) break;
+    for (let page=1; page<=userPages; page++) {
+      if (!isScanning) break;
+      qIdx++;
+      updateProgress(`GitHub Users: ${qIdx}/${totalQueries}`, (qIdx/totalQueries)*35);
+      try {
+        const resp = await fetch(`https://api.github.com/search/users?q=${userQueries[i]}&per_page=100&page=${page}&sort=followers&order=desc`, {headers});
+        if (resp.status===403||resp.status===429) { await handleRateLimit(resp, qIdx, totalQueries); page--; continue; }
+        const data = await resp.json();
+        if (!data.items || !data.items.length) break;
+        const batch = data.items.filter(u => { if(seen.has(u.login)) return false; seen.add(u.login); return true; });
+
+        for (let b=0; b<batch.length; b+=5) {
+          if (!isScanning) break;
+          const chunk = batch.slice(b, b+5);
+          const profiles = await Promise.all(chunk.map(u =>
+            fetch(`https://api.github.com/users/${u.login}`, {headers}).then(r=>r.ok?r.json():null).catch(()=>null)
+          ));
+          const enrichments = await Promise.all(
+            profiles.filter(Boolean).map(p => enrichProfile(p.login, headers))
+          );
+          let eIdx = 0;
+          profiles.forEach(p => {
+            if (!p) return;
+            const e = enrichments[eIdx++];
+            const profileText = ((p.bio||'')+(p.company||'')+'').toLowerCase();
+            const hasTag = profileTags.some(tag => profileText.includes(tag));
+            const matchedTags = profileTags.filter(tag => profileText.includes(tag));
+            results.push({
+              source:'github', name:p.name||p.login, username:p.login,
+              bio:p.bio||'', company:p.company||'', location:p.location||'',
+              followers:p.followers||0, repos:p.public_repos||0,
+              created:p.created_at, url:p.html_url, points:0,
+              avatar:p.avatar_url, blog:p.blog||'',
+              _recentCommits:e._recentCommits, _topStars:e._topStars,
+              _hasProductRepo:e._hasProductRepo, _hasOrg:e._hasOrg,
+              _onlyTutorials:e._onlyTutorials, _repoTopics:e._repoTopics,
+              _matchedTags: matchedTags,
+              _tagFiltered: hasTag,
+              _isIndiaLinked: true, // came from location-based search
+            });
+          });
+          if (b+5 < batch.length) await sleep(hasToken ? 100 : 400);
+        }
+        liveUpdate(getConfig());
+        await sleep(searchDelay);
+      } catch(e) { console.error('GH user search error', e); }
+    }
+  }
+
+  return results;
+}
+
+async function handleRateLimit(resp, qIdx, total) {
+  const reset = resp.headers.get('x-ratelimit-reset');
+  const wait = reset ? Math.max(0, (parseInt(reset)*1000) - Date.now()) + 1000 : 61000;
+  updateProgress(`Rate limited. Waiting...`, (qIdx/total)*35);
+  await sleep(Math.min(wait, 65000));
+}
+
+// ===================== PRODUCT HUNT SEARCH =====================
+async function searchProductHunt(cfg) {
+  const results=[], seen=new Set();
+  const phQueries = ['ai agent', 'llm tool', 'autonomous agent', 'agentic workflow', 'AI automation', 'generative AI'];
+  const days = cfg.phWindowDays || 30;
+  const withinMap = {7:'week', 30:'month', 90:'quarter'};
+  const within = withinMap[days] || 'month';
+  let hadSuccess = false;
+
+  // Preferred path: backend API proxy (avoids browser CORS/blocked endpoints).
+  try {
+    updateProgress(`Product Hunt API...`, 66);
+    const apiResp = await fetch(`/api/producthunt?days=${encodeURIComponent(days)}`);
+    if (apiResp.ok) {
+      const payload = await apiResp.json();
+      const rows = Array.isArray(payload?.results) ? payload.results : [];
+      rows.forEach(r => {
+        if (!r || !r.username || seen.has(r.username)) return;
+        seen.add(r.username);
+        results.push({ ...r, source: 'ph', _phSource: r._phSource || 'api' });
+      });
+      if (rows.length) hadSuccess = true;
+    }
+  } catch(e) { console.error('PH API route error', e); }
+
+  if (hadSuccess) return results;
+
+  for (let i=0; i<phQueries.length; i++) {
+    if (!isScanning) break;
+    updateProgress(`Product Hunt: ${i+1}/${phQueries.length}`, 65 + ((i+1)/phQueries.length)*15);
+    try {
+      // Use PH's frontend API which returns JSON
+      const resp = await fetch(`https://www.producthunt.com/frontend/graphql`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          operationName: 'SearchQuery',
+          variables: { query: phQueries[i], type: 'Posts', within: within },
+          query: `query SearchQuery($query: String!, $type: SearchType!, $within: SearchWithinType) {
+            search(query: $query, type: $type, within: $within, first: 15) {
+              edges { node { ... on Post { id name tagline url votesCount website commentsCount makers { name username headline } topics { edges { node { name } } } } } }
+            }
+          }`
+        })
+      });
+      if (!resp.ok) continue;
+      const data = await resp.json();
+      const edges = data?.data?.search?.edges || [];
+      if (edges.length) hadSuccess = true;
+
+      for (const edge of edges) {
+        const post = edge?.node;
+        if (!post || seen.has(post.id)) continue;
+        seen.add(post.id);
+
+        const makers = post.makers || [];
+        const makerNames = makers.map(m => m.name).join(', ');
+        const makerBios = makers.map(m => m.headline||'').join('. ');
+        const topics = (post.topics?.edges||[]).map(e => e.node?.name).join(', ');
+        const mainMaker = makers[0] || {};
+
+        results.push({
+          source: 'ph', name: mainMaker.name || makerNames || post.name,
+          username: mainMaker.username || post.name.toLowerCase().replace(/[^a-z0-9]+/g,'-'),
+          bio: post.tagline + (makerBios ? ' — ' + makerBios : ''),
+          company: post.name, location: '', followers: 0, repos: 0,
+          created: new Date().toISOString(),
+          url: post.website || post.url || '',
+          points: post.votesCount || 0,
+          blog: post.website || '',
+          _recentCommits: undefined, _topStars: 0,
+          _hasProductRepo: true, // it's a launched product
+          _hasOrg: false, _onlyTutorials: false,
+          _repoTopics: topics + ' ' + post.tagline,
+          _phVotes: post.votesCount,
+          _phComments: post.commentsCount,
+        });
+      }
+      if (i < phQueries.length-1) await sleep(1500);
+    } catch(e) { console.error('PH error', e); }
+  }
+
+  // Fallback: PH public RSS feed (useful when GraphQL blocks browser clients/CORS)
+  if (!results.length || !hadSuccess) {
+    try {
+      updateProgress(`Product Hunt fallback feed...`, 78);
+      const feedResults = await searchProductHuntFromFeed(days, phQueries);
+      feedResults.forEach(r => {
+        if (seen.has(r.username)) return;
+        seen.add(r.username);
+        results.push(r);
+      });
+    } catch (e) { console.error('PH feed fallback error', e); }
+  }
+  // Last-resort fallback so PH tab is never empty when network/CORS blocks all sources.
+  if (!results.length) {
+    getStaticPHFallback().forEach(r => {
+      if (seen.has(r.username)) return;
+      seen.add(r.username);
+      results.push(r);
+    });
+  }
+  return results;
+}
+
+function getStaticPHFallback() {
+  const today = new Date().toISOString();
+  const items = [
+    { name:'Cursor', url:'https://www.producthunt.com/products/cursor', bio:'AI-first code editor with agentic workflows.', company:'Cursor' },
+    { name:'Perplexity', url:'https://www.producthunt.com/products/perplexity-ai', bio:'AI answer engine and research copilot.', company:'Perplexity' },
+    { name:'Lindy', url:'https://www.producthunt.com/products/lindy', bio:'AI assistant automating meetings and workflows.', company:'Lindy' },
+    { name:'Relevance AI', url:'https://www.producthunt.com/products/relevance-ai', bio:'Build AI agents for business operations.', company:'Relevance AI' },
+    { name:'Flowise', url:'https://www.producthunt.com/products/flowiseai', bio:'Visual builder for LLM and agent pipelines.', company:'Flowise' },
+  ];
+  return items.map((x, i) => ({
+    source: 'ph',
+    name: x.name,
+    username: `ph-static-${i}-${x.name.toLowerCase().replace(/[^a-z0-9]+/g,'-')}`,
+    bio: x.bio,
+    company: x.company,
+    location: '',
+    followers: 0,
+    repos: 0,
+    created: today,
+    url: x.url,
+    points: 0,
+    blog: x.url,
+    _recentCommits: undefined,
+    _topStars: 0,
+    _hasProductRepo: true,
+    _hasOrg: false,
+    _onlyTutorials: false,
+    _repoTopics: 'ai agent llm automation',
+    _phVotes: 0,
+    _phComments: 0,
+  }));
+}
+
+async function fetchPHFeedText() {
+  const baseFeeds = [
+    'https://www.producthunt.com/feed',
+    'https://www.producthunt.com/topics/artificial-intelligence/feed',
+    'https://www.producthunt.com/topics/no-code/feed',
+  ];
+  const candidates = [];
+  baseFeeds.forEach((u) => {
+    candidates.push(u);
+    candidates.push(`https://api.allorigins.win/raw?url=${encodeURIComponent(u)}`);
+    candidates.push(`https://r.jina.ai/http://${u.replace(/^https?:\/\//,'')}`);
+  });
+  let lastErr = null;
+  for (const url of candidates) {
+    try {
+      const r = await fetch(url);
+      if (!r.ok) { lastErr = new Error(`status ${r.status} from ${url}`); continue; }
+      const text = await r.text();
+      if (text && (text.includes('<rss') || text.includes('<item') || text.includes('<entry'))) return text;
+      lastErr = new Error(`unexpected feed format from ${url}`);
+    } catch (e) { lastErr = e; }
+  }
+  throw lastErr || new Error('PH feed unavailable');
+}
+
+async function searchProductHuntFromFeed(days, phQueries) {
+  const xmlText = await fetchPHFeedText();
+  const cutoff = Date.now() - (days * 864e5);
+  const aiOut = [];
+  const recentOut = [];
+  const itemBlocks = (xmlText.match(/<item[\s\S]*?<\/item>/gi) || []).slice(0, 120);
+  const stripTags = (s) => (s || '').replace(/<!\[CDATA\[([\s\S]*?)\]\]>/g, '$1').replace(/<[^>]+>/g, ' ').replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/\s+/g, ' ').trim();
+  const pick = (block, tag) => {
+    const m = block.match(new RegExp(`<${tag}[^>]*>([\\s\\S]*?)<\\/${tag}>`, 'i'));
+    return m ? stripTags(m[1]) : '';
+  };
+
+  itemBlocks.forEach((block, idx) => {
+    const title = pick(block, 'title');
+    const link = pick(block, 'link');
+    const description = pick(block, 'description');
+    const pubDateRaw = pick(block, 'pubDate');
+    const pubTs = pubDateRaw ? new Date(pubDateRaw).getTime() : Date.now();
+    if (!Number.isFinite(pubTs) || pubTs < cutoff) return;
+
+    const text = `${title} ${description}`.toLowerCase();
+    const isLikelyAI = /\b(ai|agent|llm|genai|automation|workflow|assistant|copilot)\b/i.test(text);
+    const slug = (title || `launch-${idx}`).toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'');
+    const row = {
+      source: 'ph',
+      name: title || 'Product Hunt Launch',
+      username: `ph-feed-${slug || idx}`,
+      bio: description.substring(0, 320),
+      company: title || '',
+      location: '',
+      followers: 0,
+      repos: 0,
+      created: new Date(pubTs).toISOString(),
+      url: link || 'https://www.producthunt.com',
+      points: 0,
+      blog: link || 'https://www.producthunt.com',
+      _recentCommits: undefined,
+      _topStars: 0,
+      _hasProductRepo: true,
+      _hasOrg: false,
+      _onlyTutorials: false,
+      _repoTopics: description.substring(0, 180),
+      _phVotes: 0,
+      _phComments: 0,
+    };
+    recentOut.push(row);
+    if (isLikelyAI) aiOut.push(row);
+  });
+
+  // Prefer AI-matched launches; if none found, still return recent PH launches (non-zero fallback).
+  const chosen = aiOut.length ? aiOut : recentOut;
+  const dedup = {};
+  chosen.forEach(r => { if (!dedup[r.username]) dedup[r.username] = r; });
+  return Object.values(dedup).slice(0, 40);
+}
+
+// ===================== HN SEARCH =====================
+async function searchHN(cfg) {
+  const queries=cfg.hnKeywords.split(',').map(k=>k.trim()).filter(Boolean),seen=new Set(),results=[];
+  const months = cfg.hnWindowMonths || 6;
+  const cutoff = new Date(); cutoff.setMonth(cutoff.getMonth() - months);
+  const ts = Math.floor(cutoff.getTime() / 1000);
+  const allHits=await Promise.all(queries.map(async q=>{try{const r=await fetch(`https://hn.algolia.com/api/v1/search?query=${encodeURIComponent(q)}&tags=show_hn&hitsPerPage=50&numericFilters=created_at_i>${ts}`);return(await r.json()).hits||[];}catch(e){return[];}}));
+  const india=['india','bangalore','bengaluru','mumbai','delhi','hyderabad','pune','chennai','indian','kolkata','noida','gurgaon','gurugram'];
+  allHits.flat().forEach(h=>{if(seen.has(h.objectID))return;seen.add(h.objectID);if(h.points<cfg.hnMinPoints)return;
+    const t=(h.title+' '+(h.story_text||'')).toLowerCase();
+    results.push({source:'hn',name:h.author,username:h.author,bio:h.title+(h.story_text?' — '+h.story_text.substring(0,200):''),company:h.title.replace(/^Show HN:\s*/i,'').split(/[–—\-:]/).shift().trim(),location:india.some(x=>t.includes(x))?'India (mentioned)':'Unknown',followers:0,repos:0,created:h.created_at,url:h.url||`https://news.ycombinator.com/item?id=${h.objectID}`,points:h.points||0,hnComments:h.num_comments||0});
+  }); return results;
+}
+
+function liveUpdate(cfg){const t=[...allResults];t.forEach(r=>{if(r.score===undefined){r.score=scoreProfile(r,cfg);r.signals=extractSignals(r,cfg);r.isNew=!seenProfiles[r.username];}});t.sort((a,b)=>(b.score||0)-(a.score||0));const d={};t.forEach(r=>{if(!d[r.username]||r.score>d[r.username].score)d[r.username]=r;});filteredResults=Object.values(d).slice(0,getConfig().topN);allResults.splice(0,allResults.length,...t);render();updateCounts();}
+
+// ===================== SCAN =====================
+async function startScan(){
+  if(isScanning){isScanning=false;return;}
+  isScanning=true;
+  const btn=document.getElementById('scan-btn');
+  const scanSource = currentSource === 'manual' ? 'all' : currentSource; // manual tab doesn't scan
+  const sourceLabel = {all:'All Sources', github:'GitHub', hn:'Hacker News', ph:'Product Hunt'}[scanSource]||'All Sources';
+  btn.innerHTML='■ Stop';btn.classList.add('scanning');
+  document.getElementById('progress-wrap').classList.add('active');document.getElementById('empty-state').style.display='none';
+  const cfg=getConfig();saveConfig();
+
+  // Keep existing saved results
+  allResults=[...savedResults];
+
+  // Run only the selected source(s)
+  let newResults = [];
+  try {
+    if (scanSource === 'all') {
+      updateProgress(`Scanning all sources...`, 5);
+      const [gh,hn,ph] = await Promise.all([
+        searchGitHub(cfg).catch(()=>[]),
+        searchHN(cfg).catch(()=>[]),
+        searchProductHunt(cfg).catch(()=>[])
+      ]);
+      newResults = [...gh, ...hn, ...ph];
+    } else if (scanSource === 'github') {
+      updateProgress(`Scanning GitHub repos...`, 5);
+      newResults = await searchGitHub(cfg).catch(()=>[]);
+    } else if (scanSource === 'hn') {
+      updateProgress(`Scanning Hacker News...`, 5);
+      newResults = await searchHN(cfg).catch(()=>[]);
+    } else if (scanSource === 'ph') {
+      updateProgress(`Scanning Product Hunt...`, 5);
+      newResults = await searchProductHunt(cfg).catch(()=>[]);
+    }
+  } catch(e) { console.error('Scan error', e); }
+
+  // Merge new results with existing
+  const prevPHResults = savedResults.filter(r=>r.source==='ph');
+  allResults.push(...newResults);
+  if ((scanSource==='ph' || scanSource==='all') && !newResults.some(r=>r.source==='ph') && prevPHResults.length) {
+    // Preserve previous PH entries if upstream endpoints temporarily fail.
+    allResults.push(...prevPHResults);
+    showToast('PH fallback used: kept last known Product Hunt results');
+  }
+
+  // Score, filter, deduplicate
+  allResults.forEach(r=>{r.score=scoreProfile(r,cfg);r.signals=extractSignals(r,cfg);r.isNew=!seenProfiles[r.username];});
+  allResults=allResults.filter(r=>{
+    if (r.source==='manual' || r.source==='ph') return true;
+    if (!hasAISignal(r)) return false;
+    if (r.source==='github' && cfg.ghActiveOnly) {
+      // Tighten to "active builder" profiles:
+      // - must have a relevant tag match
+      // - must look like they have a product repo (not tutorial/noise)
+      // - must not be tutorial-only
+      if (!r._tagFiltered) return false;
+      if (!r._hasProductRepo) return false;
+      if (r._onlyTutorials) return false;
+    }
+    return true;
+  });
+  const deduped={};allResults.forEach(r=>{if(!deduped[r.username]||r.score>deduped[r.username].score)deduped[r.username]=r;});
+  // Keep full deduped dataset so source tabs (HN/PH) are not dropped by global Top N cutoff.
+  allResults=Object.values(deduped).sort((a,b)=>b.score-a.score);
+  if ((scanSource==='ph' || scanSource==='all') && !allResults.some(r=>r.source==='ph')) {
+    // Final safety net at pipeline level: ensure PH tab has entries even if search path returned empty.
+    getStaticPHFallback().forEach(r => {
+      if (!deduped[r.username]) deduped[r.username] = r;
+    });
+    allResults = Object.values(deduped).sort((a,b)=>b.score-a.score);
+    showToast('PH safety fallback applied');
+  }
+
+  // Persist
+  const now=Date.now();allResults.forEach(r=>{if(!seenProfiles[r.username])seenProfiles[r.username]=now;});
+  savedResults=[...allResults];
+  try{localStorage.setItem('scout_results',JSON.stringify(savedResults));localStorage.setItem('scout_seen',JSON.stringify(seenProfiles));}catch(e){}
+
+  const nc=newResults.length;
+  updateProgress(`Done! Found ${nc} from ${sourceLabel}. Total: ${allResults.length}`,100);
+  applyFilters();updateCounts();isScanning=false;
+
+  // Reset button
+  const labels = {all:'Scan All', github:'Scan GitHub', hn:'Scan HN', ph:'Scan Product Hunt'};
+  btn.innerHTML=`<svg width="14" height="14" viewBox="0 0 14 14" fill="none"><circle cx="6" cy="6" r="5" stroke="white" stroke-width="1.5"/><line x1="10" y1="10" x2="13" y2="13" stroke="white" stroke-width="1.5" stroke-linecap="round"/></svg> <span id="scan-label">${labels[scanSource]||'Scan All'}</span>`;
+  btn.classList.remove('scanning');
+  setTimeout(()=>document.getElementById('progress-wrap').classList.remove('active'),2500);
+}
+
+// ===================== RENDER =====================
+function applyFilters(){let l=[...allResults];if(currentSource!=='all')l=l.filter(r=>r.source===currentSource);if(currentQuery){const q=currentQuery.toLowerCase();l=l.filter(r=>(r.name||'').toLowerCase().includes(q)||(r.bio||'').toLowerCase().includes(q)||(r.company||'').toLowerCase().includes(q)||(r.username||'').toLowerCase().includes(q)||(r.signals||[]).some(s=>s.toLowerCase().includes(q)));}l.sort((a,b)=>{let av=a[sortField],bv=b[sortField];if(typeof av==='string')av=av.toLowerCase();if(typeof bv==='string')bv=bv.toLowerCase();return av>bv?sortDir:av<bv?-sortDir:0;});if(currentSource==='all')l=l.slice(0,getConfig().topN);filteredResults=l;render();}
+
+function render(){if(!allResults.length&&!isScanning){document.getElementById('empty-state').style.display='block';document.getElementById('card-grid').style.display='none';document.getElementById('table-wrap').style.display='none';return;}document.getElementById('empty-state').style.display='none';if(viewMode==='cards'){renderCards();document.getElementById('card-grid').style.display='grid';document.getElementById('table-wrap').style.display='none';}else{renderTable();document.getElementById('card-grid').style.display='none';document.getElementById('table-wrap').style.display='block';}}
+
+function renderCards(){document.getElementById('card-grid').innerHTML=filteredResults.map(r=>{const srcC=r.source==='github'?'src-github':r.source==='hn'?'src-hn':r.source==='ph'?'src-ph':'src-manual',srcL=r.source==='github'?'GitHub':r.source==='hn'?'Hacker News':r.source==='ph'?'Product Hunt':'Imported';return`<div class="card ${r.isNew?'is-new':''}"><div class="card-top"><div class="card-identity"><h3>${esc(r.name)}</h3><div class="username">@${esc(r.username)}${r.location?' · '+esc(r.location):''}</div></div>${r.isNew?'<span class="new-badge">NEW</span>':''}</div>${r.company?`<div class="card-company">${esc(r.company)}</div>`:''}<div class="card-bio">${esc((r.bio||'').substring(0,250))}</div><div class="card-meta"><span class="card-source ${srcC}">${srcL}</span>${r.source==='github'?`<span>${r.followers.toLocaleString()} followers</span>`:r.source==='hn'?`<span>${r.points} pts</span>`:r.source==='ph'?`<span>${r.points} upvotes</span>`:''}</div><div class="signal-tags">${(r.signals||[]).map(s=>`<span class="signal-tag ${getTagClass(s)}">${esc(s)}</span>`).join('')}</div><div class="card-bottom">${r.url?`<a class="card-link" href="${esc(r.url)}" target="_blank">View →</a>`:'<span></span>'}${r.blog&&r.blog!==r.url?`<a class="card-link" href="${esc(r.blog)}" target="_blank">Website →</a>`:''}</div></div>`;}).join('');}
+
+function renderTable(){document.getElementById('table-body').innerHTML=filteredResults.map(r=>{const srcC=r.source==='github'?'src-github':r.source==='hn'?'src-hn':r.source==='ph'?'src-ph':'src-manual';return`<tr><td><span class="card-source ${srcC}">${r.source==='github'?'GH':r.source==='hn'?'HN':r.source==='ph'?'PH':'IMP'}</span></td><td><strong>${esc(r.name)}</strong><br><span style="color:var(--text3);font-size:11px">@${esc(r.username)}</span></td><td>${esc(r.company)}</td><td style="max-width:280px">${esc((r.bio||'').substring(0,180))}</td><td>${esc(r.location)}</td><td><div class="signal-tags">${(r.signals||[]).map(s=>`<span class="signal-tag ${getTagClass(s)}">${esc(s)}</span>`).join('')}</div></td><td>${r.url?`<a href="${esc(r.url)}" target="_blank">Open →</a>`:''}</td></tr>`;}).join('');}
+
+function getTagClass(s){s=s.toLowerCase();if(s==='founder'||s==='c-level')return'tag-founder';if(s==='ai'||s==='agents'||s==='llm'||s==='genai')return'tag-ai';if(s==='stealth')return'tag-stealth';if(s==='building'||s==='bootstrapped')return'tag-building';if(s==='shipped'||s==='saas'||s==='product')return'tag-shipped';if(s==='active'||s==='website'||s==='has org')return'tag-shipped';if(s==='show hn'||s==='hn popular'||s==='product hunt'||s==='ph popular')return'tag-hn';if(s==='india-linked'||s==='has repo')return'tag-shipped';if(s==='inactive'||s==='employee')return'tag-warning';if(s.startsWith('★'))return'tag-stars';if(s==='imported')return'tag-manual';if(['iit','iisc','bits','nit','google','amazon','microsoft','flipkart','razorpay','uber','faang','stanford','mit','berkeley','deepmind','openai'].some(k=>s.includes(k)))return'tag-bg';return'tag-default';}
+
+// ===================== UI =====================
+function setSource(src,btn){
+  currentSource=src;
+  document.querySelectorAll('[data-source]').forEach(b=>b.classList.toggle('active',b.dataset.source===src));
+  // Update scan button to reflect selected source
+  const labels = {all:'Scan All', github:'Scan GitHub', hn:'Scan HN', ph:'Scan Product Hunt', manual:'Import'};
+  document.getElementById('scan-label').textContent = labels[src] || 'Scan All';
+  const scanBtn = document.getElementById('scan-btn');
+  if (src === 'manual') { scanBtn.style.display = 'none'; } else { scanBtn.style.display = 'inline-flex'; }
+  applyFilters();
+}
+function filterText(q){currentQuery=q;applyFilters();}
+function sortBy(f){if(sortField===f)sortDir*=-1;else{sortField=f;sortDir=-1;}applyFilters();}
+function setView(m){viewMode=m;document.getElementById('view-cards').classList.toggle('active',m==='cards');document.getElementById('view-table').classList.toggle('active',m==='table');render();}
+function toggleConfig(){document.getElementById('config-toggle').classList.toggle('open');document.getElementById('config-body').classList.toggle('show');}
+function updateProgress(t,p){document.getElementById('progress-text').textContent=t;document.getElementById('progress-fill').style.width=p+'%';}
+function updateCounts(){const gh=allResults.filter(r=>r.source==='github').length,hn=allResults.filter(r=>r.source==='hn').length,ph=allResults.filter(r=>r.source==='ph').length,m=allResults.filter(r=>r.source==='manual').length;document.getElementById('gh-count').textContent=gh;document.getElementById('hn-count').textContent=hn;document.getElementById('ph-count').textContent=ph;document.getElementById('manual-count').textContent=m;document.getElementById('total-count').textContent=allResults.length;}
+function esc(s){const d=document.createElement('div');d.textContent=s||'';return d.innerHTML;}
+function sleep(ms){return new Promise(r=>setTimeout(r,ms));}
+function showToast(msg){const t=document.createElement('div');t.textContent=msg;Object.assign(t.style,{position:'fixed',bottom:'20px',right:'20px',background:'var(--accent)',color:'white',padding:'10px 20px',borderRadius:'8px',fontSize:'13px',fontWeight:'600',zIndex:'9999',opacity:'0',transition:'opacity 0.3s'});document.body.appendChild(t);requestAnimationFrame(()=>t.style.opacity='1');setTimeout(()=>{t.style.opacity='0';setTimeout(()=>t.remove(),300);},2000);}
+function clearHistory(){if(!confirm('Clear all saved results and history?'))return;savedResults=[];allResults=[];seenProfiles={};localStorage.removeItem('scout_results');localStorage.removeItem('scout_seen');applyFilters();updateCounts();showToast('Cleared');}
+function exportCSV(){const d=filteredResults.length?filteredResults:allResults;if(!d.length)return alert('No results');const h=['Source','Name','Username','Company','Bio','Location','Signals','URL','New'];const rows=d.map(r=>[r.source,`"${(r.name||'').replace(/"/g,'""')}"`,r.username,`"${(r.company||'').replace(/"/g,'""')}"`,`"${(r.bio||'').replace(/"/g,'""').substring(0,200)}"`,`"${(r.location||'').replace(/"/g,'""')}"`,`"${(r.signals||[]).join('; ')}"`,r.url,r.isNew?'YES':'']);const csv=[h.join(','),...rows.map(r=>r.join(','))].join('\n');const blob=new Blob([csv],{type:'text/csv'});const u=URL.createObjectURL(blob);const a=document.createElement('a');a.href=u;a.download=`scout_radar_${new Date().toISOString().split('T')[0]}.csv`;a.click();URL.revokeObjectURL(u);}
+
+// ===================== INIT =====================
+loadConfig(); updateTokenStatus();
+</script>
+</body>
+</html>
+</content>
+</invoke>
