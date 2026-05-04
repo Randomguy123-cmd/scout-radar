@@ -189,8 +189,8 @@
   /* ===== SETTINGS PANEL ===== */
   .settings-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.3); z-index: 160; }
   .settings-overlay.show { display: block; }
-  .settings-panel { position: fixed; top: 0; left: 240px; width: 480px; height: 100vh; background: var(--card-bg); z-index: 170; box-shadow: 4px 0 24px rgba(0,0,0,0.1); overflow-y: auto; transform: translateX(-720px); transition: transform 0.25s ease; padding: 28px; visibility: hidden; }
-  .settings-panel.show { transform: translateX(0); visibility: visible; }
+  .settings-panel { display: none; position: fixed; top: 0; left: 240px; width: 480px; height: 100vh; background: var(--card-bg); z-index: 170; box-shadow: 4px 0 24px rgba(0,0,0,0.1); overflow-y: auto; padding: 28px; }
+  .settings-panel.show { display: block; }
   .settings-panel h2 { font-size: 18px; font-weight: 700; margin-bottom: 20px; }
   .settings-tabs { display: flex; gap: 6px; margin-bottom: 20px; border-bottom: 1px solid var(--border); padding-bottom: 12px; }
   .settings-tabs .btn { font-size: 13px; }
@@ -211,8 +211,7 @@
     .sidebar-nav .nav-count { display: none; }
     .sidebar-bottom a { justify-content: center; }
     .main { margin-left: 60px; }
-    .settings-panel { left: 60px; width: calc(100vw - 60px); transform: translateX(-100vw); }
-    .settings-panel.show { transform: translateX(0); }
+    .settings-panel { left: 60px; width: calc(100vw - 60px); }
     .card-grid { grid-template-columns: 1fr; }
     .kpi-strip { grid-template-columns: repeat(2, 1fr); }
     .topbar { gap: 8px; padding: 0 16px; }
