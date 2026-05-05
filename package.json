@@ -2,5 +2,6 @@
   "name": "scout-radar",
   "version": "1.0.0",
   "private": true,
+  "type": "module",
   "description": "Signal-Based Founder Scouting Dashboard — Antler India"
 }
