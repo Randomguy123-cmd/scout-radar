@@ -10,9 +10,6 @@
     { "src": "/(.*)", "dest": "/public/$1" }
   ],
   "functions": {
-    "api/scan.js": { "maxDuration": 300 }
-  },
-  "crons": [
-    { "path": "/api/scan", "schedule": "30 2 * * *" }
-  ]
+    "api/scan.js": { "maxDuration": 60 }
+  }
 }
