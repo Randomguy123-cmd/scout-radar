@@ -158,6 +158,9 @@
   .card-bottom { display: flex; justify-content: space-between; align-items: center; padding-top: 10px; border-top: 1px solid var(--border); }
   .card-location { font-size: 12px; color: var(--text3); display: flex; align-items: center; gap: 4px; }
   .card-link { font-size: 12px; color: var(--primary); text-decoration: none; font-weight: 500; display: flex; align-items: center; gap: 4px; } .card-link:hover { text-decoration: underline; }
+  .btn-save-airtable { background: none; border: 1px solid var(--border); border-radius: 6px; padding: 4px 6px; cursor: pointer; color: var(--text3); transition: all 0.15s; display: flex; align-items: center; }
+  .btn-save-airtable:hover { border-color: #7C3AED; color: #7C3AED; background: #F5F3FF; }
+  .btn-save-airtable.saved { border-color: var(--success); color: var(--success); background: var(--green-light); pointer-events: none; }
   .new-badge { font-size: 10px; font-weight: 700; text-transform: uppercase; color: var(--success); letter-spacing: 0.5px; background: var(--green-light); padding: 2px 6px; border-radius: 4px; }
 
   .empty-state { text-align: center; padding: 80px 20px; color: var(--text2); } .empty-state h3 { font-size: 20px; font-weight: 700; color: var(--text); margin-bottom: 8px; } .empty-state p { font-size: 14px; max-width: 420px; margin: 0 auto; line-height: 1.6; }
@@ -400,6 +403,10 @@
     <button class="btn btn-success" onclick="openImport()">
       <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M7 2v10M2 7h10" stroke="white" stroke-width="1.5" stroke-linecap="round"/></svg>
       Import
+    </button>
+    <button class="btn btn-secondary" onclick="pushAllToAirtable()" id="push-all-btn" style="background:#7C3AED;color:white;border-color:#7C3AED;">
+      <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M7 2v7M4 6l3 3 3-3" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M2 11h10" stroke="white" stroke-width="1.5" stroke-linecap="round"/></svg>
+      Push All to Airtable
     </button>
     <button class="btn btn-danger" onclick="clearHistory()">Clear History</button>
   </div>
@@ -1328,9 +1335,12 @@ function renderCards(){document.getElementById('card-grid').innerHTML=filteredRe
     <div class="signal-tags">${(r.signals||[]).map(s=>`<span class="signal-tag ${getTagClass(s)}">${esc(s)}</span>`).join('')}</div>
     <div class="card-bottom">
       <span class="card-location">${r.location?'<svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M6 1C4.067 1 2.5 2.567 2.5 4.5C2.5 7.25 6 11 6 11s3.5-3.75 3.5-6.5C9.5 2.567 7.933 1 6 1z" stroke="currentColor" stroke-width="1.2"/><circle cx="6" cy="4.5" r="1.2" stroke="currentColor" stroke-width="1.2"/></svg> '+esc(r.location):''}</span>
-      <div style="display:flex;gap:10px;">
+      <div style="display:flex;gap:10px;align-items:center;">
         ${r.url?`<a class="card-link" href="${esc(r.url)}" target="_blank">View</a>`:''}
         ${r.blog&&r.blog!==r.url?`<a class="card-link" href="${esc(r.blog)}" target="_blank">Website</a>`:''}
+        <button class="btn-save-airtable" onclick="pushOneToAirtable('${esc(r.username)}',this)" title="Save to Airtable">
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M7 2v7M4 6l3 3 3-3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M2 11h10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+        </button>
       </div>
     </div>
   </div>`;}).join('');}
@@ -1386,6 +1396,66 @@ function sleep(ms){return new Promise(r=>setTimeout(r,ms));}
 function showToast(msg){const t=document.createElement('div');t.textContent=msg;Object.assign(t.style,{position:'fixed',bottom:'20px',right:'20px',background:'var(--primary)',color:'white',padding:'12px 22px',borderRadius:'10px',fontSize:'13px',fontWeight:'600',zIndex:'9999',opacity:'0',transition:'opacity 0.3s',boxShadow:'0 4px 12px rgba(37,99,235,0.3)'});document.body.appendChild(t);requestAnimationFrame(()=>t.style.opacity='1');setTimeout(()=>{t.style.opacity='0';setTimeout(()=>t.remove(),300);},2000);}
 function clearHistory(){if(!confirm('Clear all saved results and history?'))return;savedResults=[];allResults=[];seenProfiles={};localStorage.removeItem('scout_results');localStorage.removeItem('scout_seen');applyFilters();updateCounts();showToast('Cleared');}
 function exportCSV(){const d=filteredResults.length?filteredResults:allResults;if(!d.length)return alert('No results');const h=['Source','Name','Username','Company','Bio','Location','Signals','URL','New'];const rows=d.map(r=>[r.source,`"${(r.name||'').replace(/"/g,'""')}"`,r.username,`"${(r.company||'').replace(/"/g,'""')}"`,`"${(r.bio||'').replace(/"/g,'""').substring(0,200)}"`,`"${(r.location||'').replace(/"/g,'""')}"`,`"${(r.signals||[]).join('; ')}"`,r.url,r.isNew?'YES':'']);const csv=[h.join(','),...rows.map(r=>r.join(','))].join('\n');const blob=new Blob([csv],{type:'text/csv'});const u=URL.createObjectURL(blob);const a=document.createElement('a');a.href=u;a.download=`scout_radar_${new Date().toISOString().split('T')[0]}.csv`;a.click();URL.revokeObjectURL(u);}
+
+// ===================== AIRTABLE PUSH =====================
+async function pushOneToAirtable(username, btnEl) {
+  const founder = allResults.find(r => r.username === username);
+  if (!founder) { showToast('Founder not found'); return; }
+  btnEl.disabled = true;
+  btnEl.innerHTML = '...';
+  try {
+    const resp = await fetch('/api/airtable', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ founders: [founder] }),
+    });
+    const data = await resp.json();
+    if (data.success) {
+      btnEl.classList.add('saved');
+      btnEl.innerHTML = '✓';
+      showToast(`${founder.name} saved to Airtable`);
+    } else {
+      btnEl.disabled = false;
+      btnEl.innerHTML = '<svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M7 2v7M4 6l3 3 3-3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M2 11h10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>';
+      showToast('Error: ' + (data.error || 'Failed'));
+    }
+  } catch(e) {
+    btnEl.disabled = false;
+    btnEl.innerHTML = '<svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M7 2v7M4 6l3 3 3-3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M2 11h10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>';
+    showToast('Network error');
+  }
+}
+
+async function pushAllToAirtable() {
+  const data = filteredResults.length ? filteredResults : allResults;
+  if (!data.length) { showToast('No results to push'); return; }
+  const btn = document.getElementById('push-all-btn');
+  const origHTML = btn.innerHTML;
+  btn.disabled = true;
+  btn.innerHTML = 'Pushing ' + data.length + '...';
+  try {
+    const resp = await fetch('/api/airtable', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ founders: data }),
+    });
+    const result = await resp.json();
+    if (result.success) {
+      showToast(`${result.created} founders pushed to Airtable`);
+      // Mark all save buttons as saved
+      document.querySelectorAll('.btn-save-airtable').forEach(b => {
+        b.classList.add('saved');
+        b.innerHTML = '✓';
+      });
+    } else {
+      showToast('Error: ' + (result.error || 'Failed'));
+    }
+  } catch(e) {
+    showToast('Network error');
+  }
+  btn.disabled = false;
+  btn.innerHTML = origHTML;
+}
 
 // ===================== INIT =====================
 loadConfig(); updateTokenStatus();
