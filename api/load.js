@@ -31,16 +31,8 @@ module.exports = async (req, res) => {
   do {
     const url = new URL(`https://api.airtable.com/v0/${AIRTABLE_BASE}/${AIRTABLE_TABLE}`);
     url.searchParams.set('filterByFormula', `{${F.status}} = "${statusFilter}"`);
-    url.searchParams.set('fields[]', F.name);
-    url.searchParams.set('fields[]', F.company);
-    url.searchParams.set('fields[]', F.location);
-    url.searchParams.set('fields[]', F.linkedinUrl);
-    url.searchParams.set('fields[]', F.source);
-    url.searchParams.set('fields[]', F.score);
-    url.searchParams.set('fields[]', F.bio);
-    url.searchParams.set('fields[]', F.companyUrl);
-    url.searchParams.set('fields[]', F.status);
-    url.searchParams.set('fields[]', F.dateFound);
+    [F.name, F.company, F.location, F.linkedinUrl, F.source, F.score, F.bio, F.companyUrl, F.status, F.dateFound]
+      .forEach(fid => url.searchParams.append('fields[]', fid));
     url.searchParams.set('pageSize', '100');
     if (offset) url.searchParams.set('offset', offset);
 
