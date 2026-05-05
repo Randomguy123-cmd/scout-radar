@@ -38,17 +38,22 @@ function score(bio='', company='', location='', source='github', followers=0, ha
 
   const aiKw = ['ai agent','llm','autonomous agent','agentic','generative ai','genai','rag','foundation model','ai startup','ai founder','ai infra'];
   aiKw.forEach(k => { if (t.includes(k)) s += 8; });
+
+  const saasKw = ['b2b saas','saas founder','saas startup','saas product','saas platform','workflow automation','no-code','low-code','crm','erp','devtools'];
+  saasKw.forEach(k => { if (t.includes(k)) s += 7; });
+
   s = Math.min(s, 30);
 
   const strongBg = ['iit','iisc','bits','nit ','ex-google','ex-amazon','ex-microsoft','ex-flipkart','ex-razorpay','ex-uber','ex-openai','ex-deepmind','faang','stanford','mit'];
   strongBg.forEach(k => { if (t.includes(k)) s += 12; });
-  s = Math.min(s + 30, 54); // cap bg bonus at 24
+  s = Math.min(s + 30, 54);
 
   if (t.match(/\bai\b/))       s += 10;
   if (t.match(/\bagent/))      s += 6;
-  if (t.match(/\bsaas\b/))     s += 6;
+  if (t.match(/\bsaas\b/))     s += 8;
   if (t.match(/\bllm\b/))      s += 6;
   if (t.match(/\bgenai\b/)||t.includes('gen ai')) s += 6;
+  if (t.match(/\bb2b\b/))      s += 5;
   if (t.match(/\bfounder\b/))  s += 15;
   if (t.match(/\bcto\b/)||t.match(/\bceo\b/)) s += 10;
   if (t.includes('building')||t.includes('stealth')) s += 8;
@@ -92,23 +97,34 @@ async function searchGitHub(ghToken) {
   const cutoff = today.toISOString().slice(0, 10);
 
   const repoQueries = [
-    // India-explicit repo searches
+    // AI Agents — India-explicit
     `ai+agent+india+stars:3..500+pushed:>${cutoff}+NOT+tutorial`,
     `llm+startup+india+stars:3..300+pushed:>${cutoff}+NOT+tutorial`,
-    `ai+saas+india+stars:3..300+pushed:>${cutoff}+NOT+tutorial`,
     `generative+ai+india+stars:3..300+pushed:>${cutoff}`,
     `rag+india+stars:2..200+pushed:>${cutoff}+NOT+tutorial`,
-    // Global but strong signal
-    `agentic+workflow+stars:3..500+pushed:>${cutoff}+NOT+awesome+NOT+tutorial`,
     `mcp+server+ai+stars:3..300+pushed:>${cutoff}`,
+    // SaaS — India-explicit
+    `saas+india+stars:3..400+pushed:>${cutoff}+NOT+tutorial`,
+    `b2b+saas+india+stars:2..300+pushed:>${cutoff}`,
+    `saas+boilerplate+india+stars:3..300+pushed:>${cutoff}`,
+    `dashboard+india+stars:3..300+pushed:>${cutoff}+NOT+tutorial`,
+    `workflow+automation+india+stars:2..300+pushed:>${cutoff}`,
+    // Global strong signal
+    `agentic+workflow+stars:3..500+pushed:>${cutoff}+NOT+awesome+NOT+tutorial`,
     `ai+agent+founder+stars:2..300+pushed:>${cutoff}`,
   ];
 
   const userQueries = [
+    // AI vertical
     `location:India+type:user+AI+founder`,
     `location:India+type:user+LLM+founder`,
     `location:India+type:user+AI+CEO`,
     `location:India+type:user+AI+CTO`,
+    // SaaS vertical
+    `location:India+type:user+SaaS+founder`,
+    `location:India+type:user+SaaS+CEO`,
+    `location:Bangalore+type:user+SaaS+founder`,
+    // City-specific AI
     `location:Bangalore+type:user+AI+founder`,
     `location:Bengaluru+type:user+AI+founder`,
     `location:Mumbai+type:user+AI+founder`,
