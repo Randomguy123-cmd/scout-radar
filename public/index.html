@@ -274,6 +274,15 @@
     </a></li>
   </ul>
 
+  <div class="sidebar-section-label">Review</div>
+  <ul class="sidebar-nav">
+    <li><a data-source="inbox" onclick="openInbox(this)">
+      <span class="nav-icon"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><rect x="1" y="4" width="14" height="9" rx="2" stroke="currentColor" stroke-width="1.5"/><path d="M1 7h4l1.5 2h3L11 7h4" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg></span>
+      <span>Inbox</span>
+      <span class="nav-count" id="nav-inbox-count">—</span>
+    </a></li>
+  </ul>
+
   <div class="sidebar-bottom">
     <a onclick="toggleSettings()">
       <span class="nav-icon"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="2" stroke="currentColor" stroke-width="1.5"/><path d="M8 1v2M8 13v2M1 8h2M13 8h2M3.05 3.05l1.41 1.41M11.54 11.54l1.41 1.41M3.05 12.95l1.41-1.41M11.54 4.46l1.41-1.41" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></span>
@@ -451,6 +460,27 @@
         <th onclick="sortBy('source')">Source</th><th onclick="sortBy('name')">Name</th><th onclick="sortBy('company')">Company</th><th>Bio</th><th onclick="sortBy('location')">Location</th><th>Signals</th><th>Link</th>
       </tr></thead><tbody id="table-body"></tbody></table>
     </div>
+  </div>
+
+  <!-- Inbox View -->
+  <div id="inbox-area" style="display:none;padding:0 24px 24px;">
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;">
+      <h2 style="font-size:17px;font-weight:700;color:var(--text);margin:0;">Inbox <span id="inbox-total" style="font-size:13px;font-weight:500;color:var(--text2);"></span></h2>
+      <button class="btn btn-secondary" onclick="loadInbox()" style="margin-left:auto;">
+        <svg width="13" height="13" viewBox="0 0 14 14" fill="none"><path d="M1 7A6 6 0 1 0 7 1" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><path d="M1 1v6h6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        Refresh
+      </button>
+      <button class="btn btn-success" id="inbox-push-btn" onclick="pushSelectedInbox()" disabled>
+        <svg width="13" height="13" viewBox="0 0 14 14" fill="none"><path d="M2 10v2h10v-2M7 2v8M4 5l3-3 3 3" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        Push Selected to Airtable
+      </button>
+    </div>
+    <div id="inbox-empty" style="display:none;text-align:center;padding:60px 0;color:var(--text2);">
+      <svg width="40" height="40" viewBox="0 0 40 40" fill="none" style="margin:0 auto 12px;display:block;opacity:0.3"><rect x="3" y="10" width="34" height="22" rx="4" stroke="currentColor" stroke-width="2"/><path d="M3 18h10l3.5 5h7L27 18h10" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg>
+      <p style="margin:0;font-size:14px;">Inbox is empty. Your X skill will push profiles here for review.</p>
+    </div>
+    <div id="inbox-loading" style="display:none;text-align:center;padding:40px 0;color:var(--text2);font-size:14px;">Loading…</div>
+    <div class="card-grid" id="inbox-grid"></div>
   </div>
 </div>
 
@@ -1435,6 +1465,8 @@ function getTagClass(s){s=s.toLowerCase();if(s==='founder'||s==='c-level')return
 // ===================== UI =====================
 function setSource(src, btn){
   currentSource=src;
+  document.getElementById('results-area').style.display='';
+  document.getElementById('inbox-area').style.display='none';
   document.querySelectorAll('#sidebar-nav a').forEach(a=>a.classList.toggle('active',a.dataset.source===src));
   const labels = {all:'Scan All', github:'Scan GitHub', hn:'Scan HN', ph:'Scan Product Hunt', manual:'Import'};
   const scanLabelEl = document.getElementById('scan-label');
@@ -1442,6 +1474,121 @@ function setSource(src, btn){
   const scanBtn = document.getElementById('scan-btn');
   if (src === 'manual') { scanBtn.style.display = 'none'; } else { scanBtn.style.display = 'inline-flex'; }
   applyFilters();
+}
+
+// ── Inbox (staged X profiles) ──────────────────────────────
+let inboxRecords = [];
+let inboxSelected = new Set();
+
+function openInbox(btn) {
+  document.querySelectorAll('#sidebar-nav a').forEach(a=>a.classList.remove('active'));
+  if (btn) btn.classList.add('active');
+  document.getElementById('results-area').style.display='none';
+  document.getElementById('inbox-area').style.display='';
+  loadInbox();
+}
+
+async function loadInbox() {
+  document.getElementById('inbox-loading').style.display='block';
+  document.getElementById('inbox-empty').style.display='none';
+  document.getElementById('inbox-grid').innerHTML='';
+  inboxSelected.clear();
+  updateInboxPushBtn();
+
+  try {
+    const resp = await fetch('/api/load?status=Inbox');
+    const data = await resp.json();
+    inboxRecords = data.records || [];
+    document.getElementById('inbox-total').textContent = `(${inboxRecords.length})`;
+    document.getElementById('nav-inbox-count').textContent = inboxRecords.length || '0';
+    if (!inboxRecords.length) {
+      document.getElementById('inbox-empty').style.display='block';
+    } else {
+      renderInboxCards();
+    }
+  } catch(e) {
+    document.getElementById('inbox-empty').style.display='block';
+    document.getElementById('inbox-empty').querySelector('p').textContent = 'Failed to load: ' + e.message;
+  }
+  document.getElementById('inbox-loading').style.display='none';
+}
+
+function renderInboxCards() {
+  const grid = document.getElementById('inbox-grid');
+  grid.innerHTML = inboxRecords.map((r, i) => {
+    const initials = (r.name||'?').split(' ').map(w=>w[0]).join('').substring(0,2).toUpperCase();
+    const scoreColor = r.score>=70?'var(--success)':r.score>=50?'var(--orange)':'var(--text3)';
+    return `<div class="founder-card" data-idx="${i}" style="cursor:pointer;outline:${inboxSelected.has(r.airtableId)?'2px solid var(--primary)':'none'};outline-offset:2px;" onclick="toggleInboxSelect('${r.airtableId}',this)">
+      <div class="card-header">
+        <div class="avatar">${initials}</div>
+        <div class="card-meta">
+          <div class="card-name">${r.name||'Unknown'}</div>
+          <div class="card-sub">${r.company||''}</div>
+        </div>
+        <div class="score-badge" style="background:${scoreColor}1a;color:${scoreColor};border-color:${scoreColor}40">${r.score}</div>
+      </div>
+      ${r.bio?`<div class="card-bio">${r.bio.substring(0,140)}${r.bio.length>140?'…':''}</div>`:''}
+      <div class="card-tags">
+        ${r.location?`<span class="tag">${r.location}</span>`:''}
+        <span class="tag" style="background:#EDE9FE;color:#6D28D9;">X</span>
+        <span style="margin-left:auto;font-size:11px;color:var(--text3);">${r.dateFound||''}</span>
+      </div>
+      <div class="card-footer">
+        ${r.url?`<a href="${r.url}" target="_blank" class="btn btn-ghost" style="font-size:12px;padding:4px 8px;" onclick="event.stopPropagation()">View Profile</a>`:''}
+        <span style="margin-left:auto;font-size:11px;color:var(--text3);">${inboxSelected.has(r.airtableId)?'✓ Selected':''}</span>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function toggleInboxSelect(id, el) {
+  if (inboxSelected.has(id)) { inboxSelected.delete(id); el.style.outline='none'; }
+  else { inboxSelected.add(id); el.style.outline='2px solid var(--primary)'; el.style.outlineOffset='2px'; }
+  const badge = el.querySelector('.card-footer span:last-child');
+  if (badge) badge.textContent = inboxSelected.has(id) ? '✓ Selected' : '';
+  updateInboxPushBtn();
+}
+
+function updateInboxPushBtn() {
+  const btn = document.getElementById('inbox-push-btn');
+  btn.disabled = inboxSelected.size === 0;
+  btn.textContent = inboxSelected.size > 0 ? `Push ${inboxSelected.size} to Airtable` : 'Push Selected to Airtable';
+}
+
+async function pushSelectedInbox() {
+  if (!inboxSelected.size) return;
+  const btn = document.getElementById('inbox-push-btn');
+  btn.disabled = true;
+  btn.textContent = 'Pushing…';
+
+  const toUpdate = inboxRecords.filter(r => inboxSelected.has(r.airtableId));
+  const airtableToken = localStorage.getItem('airtable_token');
+
+  if (!airtableToken) {
+    alert('Add your Airtable token in Settings first.');
+    btn.disabled = false;
+    updateInboxPushBtn();
+    return;
+  }
+
+  // Update status from "Inbox" to "New" for selected records
+  const BASE = 'appwiWdsmAvz62CTK';
+  const TABLE = 'tblW6mU9xd0BKTdLL';
+  const STATUS_FIELD = 'fldfSW7ViqWivnBzS';
+  let ok = 0;
+
+  for (let i = 0; i < toUpdate.length; i += 10) {
+    const batch = toUpdate.slice(i, i+10).map(r => ({ id: r.airtableId, fields: { [STATUS_FIELD]: 'New' } }));
+    const resp = await fetch(`https://api.airtable.com/v0/${BASE}/${TABLE}`, {
+      method: 'PATCH',
+      headers: { Authorization: `Bearer ${airtableToken}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ records: batch }),
+    });
+    if (resp.ok) { const d = await resp.json(); ok += d.records.length; }
+  }
+
+  alert(`${ok} founder${ok!==1?'s':''} moved to Airtable (status: New).`);
+  loadInbox();
 }
 function filterText(q){currentQuery=q;applyFilters();}
 function sortBy(f){if(sortField===f)sortDir*=-1;else{sortField=f;sortDir=-1;}applyFilters();}
