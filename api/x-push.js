@@ -170,7 +170,7 @@ module.exports = async (req, res) => {
         [F.company]:    p.company || '',
         [F.location]:   p.location || '',
         [F.linkedinUrl]:p.url || `https://x.com/${p.username}`,
-        [F.source]:     'X (Twitter)',
+        [F.source]:     'X / Twitter',
         [F.signals]:    'India-linked, AI',
         [F.score]:      scoreProfile(p.bio || '', p.location || ''),
         [F.bio]:        p.bio || '',
