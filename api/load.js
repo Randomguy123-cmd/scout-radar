@@ -1,21 +1,21 @@
-// Loads records from Airtable for the dashboard inbox view.
-// GET /api/load?status=Inbox  — returns staged profiles
-// GET /api/load               — returns all records
+// Loads records from Airtable for the X Profiles review view.
+// GET /api/load?status=Reviewing  — returns staged profiles
 
 const AIRTABLE_BASE  = 'appwiWdsmAvz62CTK';
 const AIRTABLE_TABLE = 'tblW6mU9xd0BKTdLL';
 
-const F = {
-  name:       'fldyTMMYSU53HVtyo',
-  company:    'fldSwBGTmB83AqWkz',
-  location:   'flduL5j1GQWVqTDvT',
-  linkedinUrl:'fld3xYqcUzx9OOcLS',
-  source:     'fld6E7ayV5lCQ0AgL',
-  score:      'fldfM2WorISthIbPR',
-  bio:        'fldD3oJ4jm5bMBqNV',
-  companyUrl: 'fldkLcnGbjLl7ZKVj',
-  status:     'fldfSW7ViqWivnBzS',
-  dateFound:  'fldEqPdVh0EkRZy1U',
+// Field names (used as keys in r.fields when no fields[] restriction is set)
+const FNAME = {
+  name:       'Name',
+  company:    'Company',
+  location:   'Location',
+  linkedinUrl:'LinkedIn / Profile URL',
+  source:     'Source',
+  score:      'Score',
+  bio:        'Bio / Tagline',
+  companyUrl: 'Company URL',
+  status:     'Status',
+  dateFound:  'Date Found',
 };
 
 module.exports = async (req, res) => {
@@ -30,9 +30,7 @@ module.exports = async (req, res) => {
 
   do {
     const url = new URL(`https://api.airtable.com/v0/${AIRTABLE_BASE}/${AIRTABLE_TABLE}`);
-    url.searchParams.set('filterByFormula', `{${F.status}} = "${statusFilter}"`);
-    [F.name, F.company, F.location, F.linkedinUrl, F.source, F.score, F.bio, F.companyUrl, F.status, F.dateFound]
-      .forEach(fid => url.searchParams.append('fields[]', fid));
+    url.searchParams.set('filterByFormula', `Status = "${statusFilter}"`);
     url.searchParams.set('pageSize', '100');
     if (offset) url.searchParams.set('offset', offset);
 
@@ -42,19 +40,38 @@ module.exports = async (req, res) => {
     if (!resp.ok) return res.status(resp.status).json({ error: await resp.text() });
     const data = await resp.json();
 
+    // Log first record's keys to debug field names
+    if (data.records?.length && records.length === 0) {
+      console.log('[load] Sample field keys:', Object.keys(data.records[0].fields || {}));
+    }
+
     (data.records || []).forEach(r => {
+      const f = r.fields || {};
+      // Try field IDs first, fall back to any key containing the concept
+      const get = (id, fallbackKeys) => {
+        if (f[id] !== undefined) return f[id];
+        for (const k of (fallbackKeys || [])) {
+          const found = Object.keys(f).find(key => key.toLowerCase().includes(k.toLowerCase()));
+          if (found) return f[found];
+        }
+        return '';
+      };
+
+      const sourceVal = get('fld6E7ayV5lCQ0AgL', ['source']);
+      const statusVal = get('fldfSW7ViqWivnBzS', ['status']);
+
       records.push({
         airtableId: r.id,
-        name:       r.fields[F.name] || '',
-        company:    r.fields[F.company] || '',
-        location:   r.fields[F.location] || '',
-        url:        r.fields[F.linkedinUrl] || '',
-        source:     typeof r.fields[F.source] === 'object' ? r.fields[F.source]?.name : (r.fields[F.source] || ''),
-        score:      r.fields[F.score] || 0,
-        bio:        r.fields[F.bio] || '',
-        blog:       r.fields[F.companyUrl] || '',
-        status:     typeof r.fields[F.status] === 'object' ? r.fields[F.status]?.name : (r.fields[F.status] || ''),
-        dateFound:  r.fields[F.dateFound] || '',
+        name:       get('fldyTMMYSU53HVtyo', ['name']) || '',
+        company:    get('fldSwBGTmB83AqWkz', ['company']) || '',
+        location:   get('flduL5j1GQWVqTDvT', ['location']) || '',
+        url:        get('fld3xYqcUzx9OOcLS', ['linkedin', 'profile', 'url']) || '',
+        source:     typeof sourceVal === 'object' ? sourceVal?.name : (sourceVal || ''),
+        score:      get('fldfM2WorISthIbPR', ['score']) || 0,
+        bio:        get('fldD3oJ4jm5bMBqNV', ['bio', 'tagline']) || '',
+        blog:       get('fldkLcnGbjLl7ZKVj', ['company url', 'blog']) || '',
+        status:     typeof statusVal === 'object' ? statusVal?.name : (statusVal || ''),
+        dateFound:  get('fldEqPdVh0EkRZy1U', ['date']) || '',
       });
     });
     offset = data.offset || null;
