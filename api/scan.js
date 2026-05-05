@@ -92,19 +92,29 @@ async function searchGitHub(ghToken) {
   const cutoff = today.toISOString().slice(0, 10);
 
   const repoQueries = [
+    // India-explicit repo searches
     `ai+agent+india+stars:3..500+pushed:>${cutoff}+NOT+tutorial`,
-    `llm+startup+india+stars:3..300+pushed:>${cutoff}`,
+    `llm+startup+india+stars:3..300+pushed:>${cutoff}+NOT+tutorial`,
     `ai+saas+india+stars:3..300+pushed:>${cutoff}+NOT+tutorial`,
-    `agentic+workflow+stars:3..500+pushed:>${cutoff}+NOT+awesome`,
-    `ai+agent+stars:3..500+pushed:>${cutoff}+NOT+tutorial+NOT+course`,
+    `generative+ai+india+stars:3..300+pushed:>${cutoff}`,
+    `rag+india+stars:2..200+pushed:>${cutoff}+NOT+tutorial`,
+    // Global but strong signal
+    `agentic+workflow+stars:3..500+pushed:>${cutoff}+NOT+awesome+NOT+tutorial`,
     `mcp+server+ai+stars:3..300+pushed:>${cutoff}`,
+    `ai+agent+founder+stars:2..300+pushed:>${cutoff}`,
   ];
 
   const userQueries = [
     `location:India+type:user+AI+founder`,
     `location:India+type:user+LLM+founder`,
+    `location:India+type:user+AI+CEO`,
+    `location:India+type:user+AI+CTO`,
     `location:Bangalore+type:user+AI+founder`,
     `location:Bengaluru+type:user+AI+founder`,
+    `location:Mumbai+type:user+AI+founder`,
+    `location:Delhi+type:user+AI+founder`,
+    `location:Hyderabad+type:user+AI+founder`,
+    `location:Pune+type:user+AI+founder`,
   ];
 
   // Repo searches
@@ -182,7 +192,16 @@ async function searchHN() {
   const results = [];
   const seen = new Set();
   const cutoff = Math.floor(Date.now() / 1000) - 30 * 86400;
-  const queries = ['AI agent India', 'LLM startup India', 'Show HN AI India', 'generative AI India founder'];
+  const queries = [
+    'AI agent India',
+    'LLM startup India',
+    'Show HN AI India',
+    'generative AI India founder',
+    'Show HN India founder',
+    'AI SaaS India',
+    'RAG India startup',
+    'MCP server India',
+  ];
 
   await Promise.all(queries.map(async q => {
     try {
