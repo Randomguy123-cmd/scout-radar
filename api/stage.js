@@ -66,7 +66,7 @@ module.exports = async (req, res) => {
         [F.score]:      scoreProfile(p.bio || '', p.location || ''),
         [F.bio]:        p.bio || '',
         [F.companyUrl]: p.website || '',
-        [F.status]:     'Inbox',
+        [F.status]:     'Reviewing',
         [F.dateFound]:  today,
       }
     }));

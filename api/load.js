@@ -24,7 +24,7 @@ module.exports = async (req, res) => {
   const atToken = process.env.AIRTABLE_TOKEN;
   if (!atToken) return res.status(500).json({ error: 'AIRTABLE_TOKEN not set' });
 
-  const statusFilter = req.query.status || 'Inbox';
+  const statusFilter = req.query.status || 'Reviewing';
   const records = [];
   let offset = null;
 

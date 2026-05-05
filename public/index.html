@@ -1496,7 +1496,7 @@ async function loadInbox() {
   updateInboxPushBtn();
 
   try {
-    const resp = await fetch('/api/load?status=Inbox');
+    const resp = await fetch('/api/load?status=Reviewing');
     const data = await resp.json();
     inboxRecords = data.records || [];
     document.getElementById('inbox-total').textContent = `(${inboxRecords.length})`;
