@@ -301,7 +301,7 @@
 
   <div class="config-grid cfg-tab" id="cfg-tab-github" style="display:none;">
     <div class="cfg-field"><label>Location Focus</label><input type="text" id="cfg-location" value="India"><div class="cfg-hint">For supplementary user search (repo search is global)</div></div>
-    <div class="cfg-field"><label>Profile Tags to Surface</label><textarea id="cfg-gh-tags">founder, co-founder, cto, ceo, building, shipped, bootstrapped, stealth, launching, indie hacker</textarea><div class="cfg-hint">Filters repo owners — must have one of these in bio or README</div></div>
+    <div class="cfg-field"><label>Profile Tags to Surface</label><textarea id="cfg-gh-tags">founder, co-founder, cto, ceo, bootstrapped, stealth, launching, indie hacker</textarea><div class="cfg-hint">Filters repo owners — must have one of these in bio or README</div></div>
     <div class="cfg-field"><label>Repo Star Range</label>
       <div style="display:flex;gap:8px;align-items:center;"><input type="number" id="cfg-gh-min-stars" value="3" min="0" style="width:90px"> <span style="color:var(--text3);">to</span> <input type="number" id="cfg-gh-max-stars" value="500" min="1" style="width:90px"></div>
       <div class="cfg-hint">Low = indie builders. High cap excludes big company repos.</div>
@@ -573,7 +573,7 @@ function getConfig() { return {
 }; }
 
 function saveConfig() { localStorage.setItem('scout_config',JSON.stringify(getConfig())); const t=document.getElementById('gh-token').value.trim(); if(t)localStorage.setItem('scout_gh_token',t);else localStorage.removeItem('scout_gh_token'); showToast('Filters saved'); }
-function resetConfig() { document.getElementById('cfg-location').value=DEFAULT_CONFIG.location; document.getElementById('cfg-exclude').value=DEFAULT_CONFIG.exclude; document.getElementById('cfg-top-n').value=DEFAULT_CONFIG.topN; document.getElementById('cfg-strong-bg').value=DEFAULT_CONFIG.strongBg; document.getElementById('cfg-hn-window').value='6'; document.getElementById('cfg-ph-window').value='30'; document.getElementById('cfg-gh-tags').value='founder, co-founder, cto, ceo, building, shipped, bootstrapped, stealth, launching, indie hacker'; document.getElementById('cfg-gh-min-stars').value='3'; document.getElementById('cfg-gh-max-stars').value='500'; document.getElementById('cfg-gh-active-only').checked=true; localStorage.removeItem('scout_config'); showToast('Reset'); }
+function resetConfig() { document.getElementById('cfg-location').value=DEFAULT_CONFIG.location; document.getElementById('cfg-exclude').value=DEFAULT_CONFIG.exclude; document.getElementById('cfg-top-n').value=DEFAULT_CONFIG.topN; document.getElementById('cfg-strong-bg').value=DEFAULT_CONFIG.strongBg; document.getElementById('cfg-hn-window').value='6'; document.getElementById('cfg-ph-window').value='30'; document.getElementById('cfg-gh-tags').value='founder, co-founder, cto, ceo, bootstrapped, stealth, launching, indie hacker'; document.getElementById('cfg-gh-min-stars').value='3'; document.getElementById('cfg-gh-max-stars').value='500'; document.getElementById('cfg-gh-active-only').checked=true; localStorage.removeItem('scout_config'); showToast('Reset'); }
 
 // ===================== TOKEN =====================
 document.getElementById('gh-token').addEventListener('input',()=>{ updateTokenStatus(); const t=document.getElementById('gh-token').value.trim(); if(t)localStorage.setItem('scout_gh_token',t);else localStorage.removeItem('scout_gh_token'); });
@@ -605,8 +605,20 @@ function scoreProfile(p, cfg) {
   if(text.match(/\bai\b/))s+=10; if(text.match(/\bagent/))s+=6; if(text.match(/\bsaas\b/))s+=6;
   if(text.match(/\bllm\b/)||text.includes('large language'))s+=6; if(text.match(/\bml\b/)||text.includes('machine learning'))s+=4;
   if(text.match(/\bgenai\b/)||text.includes('gen ai')||text.includes('generative'))s+=6;
+
+  // Explicit founder identity — biggest signal, scored separately from bioKeywords
+  if(text.match(/\bfounder\b/))s+=20; if(text.match(/\bco-?founder\b/))s+=20;
+  if(text.match(/\bceo\b/))s+=15; if(text.match(/\bcto\b/))s+=15;
+  if(text.includes('stealth'))s+=12; if(text.includes('building in public'))s+=10;
+
+  // Org + website = company actually exists (strongest combo on GitHub)
+  if(p._hasOrg && p.blog)s+=25;
   if(p.blog)s+=10; if(p.blog&&p.blog.match(/\.(ai|io|co|app|dev|tech)$/i))s+=5;
-  if(p.created&&new Date(p.created)>new Date('2024-01-01'))s+=8;
+
+  // Fresh account = likely just started founding
+  if(p.created&&new Date(p.created)>new Date('2023-01-01'))s+=12;
+  else if(p.created&&new Date(p.created)>new Date('2024-01-01'))s+=6;
+
   if(p.followers>0)s+=Math.min(Math.log10(p.followers)*5,15);
   if(p._recentCommits>20)s+=15;else if(p._recentCommits>5)s+=10;else if(p._recentCommits>0)s+=5;else if(p._recentCommits===0&&p.source==='github')s-=10;
   if(p._topStars>500)s+=20;else if(p._topStars>100)s+=15;else if(p._topStars>50)s+=10;else if(p._topStars>10)s+=5;
@@ -887,7 +899,7 @@ async function searchGitHub(cfg) {
     `llm+startup+india+${starRange}+pushed:>${recentCutoff}`,
     `ai+saas+india+${starRange}+pushed:>${recentCutoff}+NOT+tutorial`,
   ];
-  const profileTags = (cfg.ghTags || 'founder, co-founder, cto, ceo, building, shipped, bootstrapped, stealth').split(',').map(t=>t.trim().toLowerCase()).filter(Boolean);
+  const profileTags = (cfg.ghTags || 'founder, co-founder, cto, ceo, bootstrapped, stealth, launching, indie hacker').split(',').map(t=>t.trim().toLowerCase()).filter(Boolean);
   const userQueries = [
     `location:${cfg.location}+type:user+AI+founder`,
     `location:${cfg.location}+type:user+LLM+founder`,
@@ -1305,10 +1317,12 @@ async function startScan(){
     if (r.source==='github' && cfg.ghActiveOnly) {
       if (r._onlyTutorials) return false;
       if (r._isIndiaLinked) {
-        // Indian profile: one signal (bio tag OR product repo) is enough
-        if (!r._tagFiltered && !r._hasProductRepo) return false;
+        // Indian profile: need explicit founder identity OR company org+product
+        const hasFounderIdentity = (r.signals||[]).some(s=>['Founder','C-Level','Stealth'].includes(s));
+        const hasCompanyPresence = r._hasOrg && r._hasProductRepo;
+        if (!hasFounderIdentity && !hasCompanyPresence && !r._tagFiltered) return false;
       } else {
-        // Non-India: keep the strict gate — both signals required
+        // Non-India: strict — both tag and product required
         if (!r._tagFiltered) return false;
         if (!r._hasProductRepo) return false;
       }
