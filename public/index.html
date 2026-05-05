@@ -112,6 +112,17 @@
   /* ===== ACTION BAR ===== */
   .action-bar { display: flex; align-items: center; gap: 10px; padding: 16px 24px; flex-wrap: wrap; }
 
+  /* ===== FILTER BAR ===== */
+  .filter-bar { display: flex; align-items: center; gap: 8px; padding: 0 24px 14px; flex-wrap: wrap; }
+  .filter-chip { padding: 5px 13px; border-radius: 20px; border: 1px solid var(--border); background: var(--card-bg); color: var(--text2); font-size: 12px; font-weight: 500; cursor: pointer; transition: all 0.15s; white-space: nowrap; }
+  .filter-chip:hover { border-color: var(--primary); color: var(--primary); }
+  .filter-chip.active { background: var(--primary); color: white; border-color: var(--primary); }
+  .filter-chip.active.india-chip { background: #059669; border-color: #059669; }
+  .filter-select { padding: 5px 10px; border-radius: 20px; border: 1px solid var(--border); background: var(--card-bg); color: var(--text); font-size: 12px; font-weight: 500; cursor: pointer; outline: none; transition: border-color 0.15s; }
+  .filter-select:focus { border-color: var(--primary); }
+  .filter-divider { width: 1px; height: 18px; background: var(--border); margin: 0 2px; }
+  .filter-count { font-size: 12px; color: var(--text3); margin-left: 4px; }
+
   /* ===== PROGRESS ===== */
   .progress-wrap { padding: 0 24px; overflow: hidden; max-height: 0; transition: max-height 0.3s; } .progress-wrap.active { max-height: 60px; }
   .progress-inner { padding: 10px 0; } .progress-text { font-size: 12px; color: var(--text2); margin-bottom: 4px; }
@@ -415,6 +426,22 @@
   <!-- Progress -->
   <div class="progress-wrap" id="progress-wrap"><div class="progress-inner"><div class="progress-text" id="progress-text">Ready</div><div class="progress-track"><div class="progress-fill" id="progress-fill" style="width:0%"></div></div></div></div>
 
+  <!-- Filter Bar -->
+  <div class="filter-bar" id="filter-bar">
+    <button class="filter-chip india-chip" id="chip-india" onclick="toggleChip('india',this)">India Only</button>
+    <button class="filter-chip" id="chip-founder" onclick="toggleChip('founder',this)">Founder</button>
+    <button class="filter-chip" id="chip-stealth" onclick="toggleChip('stealth',this)">Stealth</button>
+    <button class="filter-chip" id="chip-active" onclick="toggleChip('active',this)">Active Builder</button>
+    <div class="filter-divider"></div>
+    <select class="filter-select" id="filter-score" onchange="applyFilters()">
+      <option value="0">Any Score</option>
+      <option value="30">Score 30+</option>
+      <option value="50">Score 50+</option>
+      <option value="70">Score 70+</option>
+    </select>
+    <span class="filter-count" id="filter-count"></span>
+  </div>
+
   <!-- Results -->
   <div class="results" id="results-area">
     <div class="empty-state" id="empty-state"><h3>Ready to scout</h3><p>Scan GitHub + HN for AI agent founders, or import profiles manually from X / StealthCoSpy.</p></div>
@@ -494,6 +521,7 @@ Location: Mumbai"></textarea>
 // ===================== STATE =====================
 let allResults = [], filteredResults = [], savedResults = [], seenProfiles = {};
 let currentSource = 'all', currentQuery = '', sortField = 'score', sortDir = -1, viewMode = 'cards', isScanning = false;
+let activeFilters = new Set();
 
 // ===================== CONFIG =====================
 const DEFAULT_CONFIG = {
@@ -1312,7 +1340,29 @@ async function startScan(){
 }
 
 // ===================== RENDER =====================
-function applyFilters(){let l=[...allResults];if(currentSource!=='all')l=l.filter(r=>r.source===currentSource);if(currentQuery){const q=currentQuery.toLowerCase();l=l.filter(r=>(r.name||'').toLowerCase().includes(q)||(r.bio||'').toLowerCase().includes(q)||(r.company||'').toLowerCase().includes(q)||(r.username||'').toLowerCase().includes(q)||(r.signals||[]).some(s=>s.toLowerCase().includes(q)));}l.sort((a,b)=>{let av=a[sortField],bv=b[sortField];if(typeof av==='string')av=av.toLowerCase();if(typeof bv==='string')bv=bv.toLowerCase();return av>bv?sortDir:av<bv?-sortDir:0;});if(currentSource==='all')l=l.slice(0,getConfig().topN);filteredResults=l;render();}
+function toggleChip(key, btn) {
+  if (activeFilters.has(key)) { activeFilters.delete(key); btn.classList.remove('active'); }
+  else { activeFilters.add(key); btn.classList.add('active'); }
+  applyFilters();
+}
+
+function applyFilters(){
+  let l=[...allResults];
+  if(currentSource!=='all')l=l.filter(r=>r.source===currentSource);
+  if(currentQuery){const q=currentQuery.toLowerCase();l=l.filter(r=>(r.name||'').toLowerCase().includes(q)||(r.bio||'').toLowerCase().includes(q)||(r.company||'').toLowerCase().includes(q)||(r.username||'').toLowerCase().includes(q)||(r.signals||[]).some(s=>s.toLowerCase().includes(q)));}
+  if(activeFilters.has('india')) l=l.filter(r=>r._isIndiaLinked);
+  if(activeFilters.has('founder')) l=l.filter(r=>(r.signals||[]).some(s=>['Founder','C-Level'].includes(s)));
+  if(activeFilters.has('stealth')) l=l.filter(r=>(r.signals||[]).some(s=>s==='Stealth'));
+  if(activeFilters.has('active')) l=l.filter(r=>(r.signals||[]).some(s=>s==='Active'));
+  const minScore=parseInt(document.getElementById('filter-score')?.value)||0;
+  if(minScore>0) l=l.filter(r=>(r.score||0)>=minScore);
+  l.sort((a,b)=>{let av=a[sortField],bv=b[sortField];if(typeof av==='string')av=av.toLowerCase();if(typeof bv==='string')bv=bv.toLowerCase();return av>bv?sortDir:av<bv?-sortDir:0;});
+  if(currentSource==='all')l=l.slice(0,getConfig().topN);
+  filteredResults=l;
+  const countEl=document.getElementById('filter-count');
+  if(countEl) countEl.textContent=l.length?`${l.length} shown`:'';
+  render();
+}
 
 function render(){if(!allResults.length&&!isScanning){document.getElementById('empty-state').style.display='block';document.getElementById('card-grid').style.display='none';document.getElementById('table-wrap').style.display='none';return;}document.getElementById('empty-state').style.display='none';if(viewMode==='cards'){renderCards();document.getElementById('card-grid').style.display='grid';document.getElementById('table-wrap').style.display='none';}else{renderTable();document.getElementById('card-grid').style.display='none';document.getElementById('table-wrap').style.display='block';}}
 
