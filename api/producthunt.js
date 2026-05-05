@@ -1,7 +1,7 @@
 // Vercel serverless function — proxies Product Hunt GraphQL queries
 // to avoid browser CORS restrictions.
 
-export default async function handler(req, res) {
+module.exports = async (req, res) => {
   // Allow GET with ?days=30 or POST with body
   const days = parseInt(req.query.days || '30');
   const withinMap = { 7: 'week', 30: 'month', 90: 'quarter' };

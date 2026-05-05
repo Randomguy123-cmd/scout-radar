@@ -1,7 +1,7 @@
 // Vercel serverless function — pushes founders to Airtable
 // Handles both single and bulk pushes
 
-export default async function handler(req, res) {
+module.exports = async (req, res) => {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'POST only' });
   }
