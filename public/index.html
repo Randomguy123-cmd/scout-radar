@@ -870,12 +870,9 @@ async function searchGitHub(cfg) {
     `location:Bengaluru+type:user+AI+founder`,
     `location:Mumbai+type:user+AI+founder`,
     `location:Hyderabad+type:user+AI+founder`,
-    `location:Delhi+type:user+AI+building`,
-    `location:Pune+type:user+AI+founder`,
-    `location:Chennai+type:user+AI+founder`,
   ];
-  const repoPages = hasToken ? 3 : 2;
-  const userPages = hasToken ? 2 : 1;
+  const repoPages = hasToken ? 2 : 1;
+  const userPages = 1;
   const searchDelay = hasToken ? 1600 : 4200;
   const totalQueries = (repoQueries.length * repoPages) + (userQueries.length * userPages);
   let qIdx = 0;
@@ -898,9 +895,9 @@ async function searchGitHub(cfg) {
           seen.add(login);
           owners.push({ login, repo });
         }
-        for (let b=0; b<owners.length; b+=5) {
+        for (let b=0; b<owners.length; b+=10) {
           if (!isScanning) break;
-          const chunk = owners.slice(b, b+5);
+          const chunk = owners.slice(b, b+10);
           const profiles = await Promise.all(chunk.map(({login}) =>
             fetch(`https://api.github.com/users/${login}`, {headers}).then(r=>r.ok?r.json():null).catch(()=>null)
           ));
@@ -944,7 +941,7 @@ async function searchGitHub(cfg) {
               _isIndiaLinked: hasIndiaSignal(p) || INDIA_CITIES.some(c=>(repo.description||'').toLowerCase().includes(c)),
             });
           }
-          if (b+5 < owners.length) await sleep(hasToken ? 100 : 400);
+          if (b+10 < owners.length) await sleep(hasToken ? 50 : 200);
         }
         liveUpdate(getConfig());
         await sleep(searchDelay);
@@ -964,9 +961,9 @@ async function searchGitHub(cfg) {
         const data = await resp.json();
         if (!data.items || !data.items.length) break;
         const batch = data.items.filter(u => { if(seen.has(u.login)) return false; seen.add(u.login); return true; });
-        for (let b=0; b<batch.length; b+=5) {
+        for (let b=0; b<batch.length; b+=8) {
           if (!isScanning) break;
-          const chunk = batch.slice(b, b+5);
+          const chunk = batch.slice(b, b+8);
           const profiles = await Promise.all(chunk.map(u =>
             fetch(`https://api.github.com/users/${u.login}`, {headers}).then(r=>r.ok?r.json():null).catch(()=>null)
           ));
@@ -994,7 +991,7 @@ async function searchGitHub(cfg) {
               _isIndiaLinked: true,
             });
           });
-          if (b+5 < batch.length) await sleep(hasToken ? 100 : 400);
+          if (b+8 < batch.length) await sleep(hasToken ? 50 : 200);
         }
         liveUpdate(getConfig());
         await sleep(searchDelay);
