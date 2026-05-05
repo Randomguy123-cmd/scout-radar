@@ -190,7 +190,7 @@
   .modal .btn-ghost.active { background: var(--blue-light); color: var(--primary); }
 
   /* ===== SETTINGS PANEL ===== */
-  .settings-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.3); z-index: 160; }
+  .settings-overlay { display: none; position: fixed; top: 0; right: 0; bottom: 0; left: 240px; background: rgba(0,0,0,0.3); z-index: 160; }
   .settings-overlay.show { display: block; }
   .settings-panel { display: none; position: fixed; top: 0; left: 240px; width: 480px; height: 100vh; background: var(--card-bg); z-index: 170; box-shadow: 4px 0 24px rgba(0,0,0,0.1); overflow-y: auto; padding: 28px; }
   .settings-panel.show { display: block; }
@@ -214,6 +214,7 @@
     .sidebar-nav .nav-count { display: none; }
     .sidebar-bottom a { justify-content: center; }
     .main { margin-left: 60px; }
+    .settings-overlay { left: 60px; }
     .settings-panel { left: 60px; width: calc(100vw - 60px); }
     .card-grid { grid-template-columns: 1fr; }
     .kpi-strip { grid-template-columns: repeat(2, 1fr); }
@@ -584,7 +585,7 @@ function scoreProfile(p, cfg) {
   if(p._hasProductRepo)s+=10; if(p._hasOrg)s+=8;
   if(p.source==='hn'&&p.points)s+=Math.min(p.points/5,20);
   if(p.source==='ph'){s+=12;if(p._phVotes>50)s+=15;else if(p._phVotes>20)s+=10;else if(p._phVotes>5)s+=5;}
-  if(p._isIndiaLinked)s+=10;
+  if(p._isIndiaLinked)s+=20;
   if(p.source==='manual')s+=15;
   fundedKw.forEach(k=>{if(text.includes(k))s-=20});
   let emp=false; EMPLOYEE_SIGNALS.forEach(x=>{if(text.includes(x)){s-=15;emp=true;}});
@@ -828,8 +829,8 @@ async function enrichProfile(username, headers) {
 }
 
 // ===================== GITHUB SEARCH (Repo-based) =====================
-const INDIA_CITIES=['india','bangalore','bengaluru','mumbai','delhi','hyderabad','pune','chennai','kolkata','noida','gurgaon','gurugram','jaipur','ahmedabad','kochi','chandigarh','lucknow','ncr','indore'];
-const INDIA_INSTITUTIONS=['iit','iisc','bits pilani','nit ','isb ','iiit','manipal','vit ','srm ','amity','anna university'];
+const INDIA_CITIES=['india','bangalore','bengaluru','mumbai','delhi','hyderabad','pune','chennai','kolkata','noida','gurgaon','gurugram','jaipur','ahmedabad','kochi','chandigarh','lucknow','ncr','indore','surat','bhopal','nagpur','vadodara','coimbatore','visakhapatnam','vizag','thiruvananthapuram','trivandrum','bhubaneswar','patna','ranchi','mysuru','mysore','nashik','madurai','karnataka','maharashtra','telangana','rajasthan','gujarat','kerala'];
+const INDIA_INSTITUTIONS=['iit ','iit-','iitb','iitd','iitm','iitk','iith','iiti','iisc','bits pilani','bits-pilani','nit ','isb ','iiit','manipal','vit ','srm ','amity','anna university','jadavpur','iim ','nift','nid ','iiser','dtu ','nsut','pec '];
 function dateDaysAgo(days){ const d=new Date(Date.now()-days*864e5); return d.toISOString().slice(0,10); }
 
 function hasIndiaSignal(user) {
@@ -850,17 +851,28 @@ async function searchGitHub(cfg) {
     `autonomous+agent+AI+${starRange}+pushed:>${recentCutoff}`,
     `rag+pipeline+${starRange}+pushed:>${recentCutoff}+NOT+tutorial`,
     `ai+agent+framework+${starRange}+pushed:>${recentCutoff}`,
-    `langchain+agent+stars:${minS}..300+pushed:>${recentCutoff}`,
+    `langchain+agent+${starRange}+pushed:>${recentCutoff}`,
     `multi+agent+${starRange}+pushed:>${recentCutoff}+NOT+awesome`,
-    `generative+ai+saas+stars:${minS}..300+pushed:>${recentCutoff}`,
-    `mcp+server+ai+stars:${minS}..300+pushed:>${recentCutoff}`,
+    `generative+ai+saas+${starRange}+pushed:>${recentCutoff}`,
+    `mcp+server+ai+${starRange}+pushed:>${recentCutoff}`,
+    `ai+agent+india+${starRange}+pushed:>${recentCutoff}+NOT+tutorial`,
+    `llm+startup+india+${starRange}+pushed:>${recentCutoff}`,
+    `ai+saas+india+${starRange}+pushed:>${recentCutoff}+NOT+tutorial`,
   ];
   const profileTags = (cfg.ghTags || 'founder, co-founder, cto, ceo, building, shipped, bootstrapped, stealth').split(',').map(t=>t.trim().toLowerCase()).filter(Boolean);
   const userQueries = [
-    `location:${cfg.location}+type:user+"AI agent"+"founder"`,
-    `location:${cfg.location}+type:user+"AI"+"building"+"agent"`,
-    `location:${cfg.location}+type:user+"LLM"+"founder"`,
-    `location:${cfg.location}+type:user+"GenAI"+"building"`,
+    `location:${cfg.location}+type:user+AI+founder`,
+    `location:${cfg.location}+type:user+LLM+founder`,
+    `location:${cfg.location}+type:user+AI+building`,
+    `location:${cfg.location}+type:user+agentic`,
+    `location:${cfg.location}+type:user+AI+startup`,
+    `location:Bangalore+type:user+AI+founder`,
+    `location:Bengaluru+type:user+AI+founder`,
+    `location:Mumbai+type:user+AI+founder`,
+    `location:Hyderabad+type:user+AI+founder`,
+    `location:Delhi+type:user+AI+building`,
+    `location:Pune+type:user+AI+founder`,
+    `location:Chennai+type:user+AI+founder`,
   ];
   const repoPages = hasToken ? 3 : 2;
   const userPages = hasToken ? 2 : 1;
@@ -897,7 +909,7 @@ async function searchGitHub(cfg) {
             if (!p) continue;
             if (p.type==='Organization' && (p.followers||0)>200) continue;
             const repo = chunk[j].repo;
-            const profileText = ((p.bio||'')+(p.company||'')+(repo.description||'')).toLowerCase();
+            const profileText = ((p.bio||'')+(p.company||'')+(repo.description||'')+(repo.topics||[]).join(' ')).toLowerCase();
             const hasTag = profileTags.some(tag => profileText.includes(tag));
             const matchedTags = profileTags.filter(tag => profileText.includes(tag));
             const nm=(repo.name||'').toLowerCase();
@@ -906,7 +918,11 @@ async function searchGitHub(cfg) {
             const cutoff90 = Date.now() - 90*864e5;
             const pushedTs = repo.pushed_at ? new Date(repo.pushed_at).getTime() : 0;
             const recentCommits = (Number.isFinite(pushedTs) && pushedTs > cutoff90) ? 1 : 0;
-            const hasProductRepo = !isNoise && !!(repo.homepage && (repo.description||'').length > 15);
+            const hasProductRepo = !isNoise && (
+              !!(repo.homepage && desc.length > 10) ||
+              (repo.stargazers_count >= 5 && desc.length > 15) ||
+              repo.stargazers_count >= 25
+            );
             results.push({
               _matchedTags: matchedTags,
               _tagFiltered: hasTag,
@@ -925,7 +941,7 @@ async function searchGitHub(cfg) {
               _repoTopics: (repo.topics||[]).join(' ') + ' ' + (repo.description||''),
               _foundRepo: repo.full_name,
               _foundRepoDesc: (repo.description||'').substring(0, 120),
-              _isIndiaLinked: hasIndiaSignal(p),
+              _isIndiaLinked: hasIndiaSignal(p) || INDIA_CITIES.some(c=>(repo.description||'').toLowerCase().includes(c)),
             });
           }
           if (b+5 < owners.length) await sleep(hasToken ? 100 : 400);
@@ -1271,9 +1287,15 @@ async function startScan(){
     if (r.source==='manual' || r.source==='ph') return true;
     if (!hasAISignal(r)) return false;
     if (r.source==='github' && cfg.ghActiveOnly) {
-      if (!r._tagFiltered) return false;
-      if (!r._hasProductRepo) return false;
       if (r._onlyTutorials) return false;
+      if (r._isIndiaLinked) {
+        // Indian profile: one signal (bio tag OR product repo) is enough
+        if (!r._tagFiltered && !r._hasProductRepo) return false;
+      } else {
+        // Non-India: keep the strict gate — both signals required
+        if (!r._tagFiltered) return false;
+        if (!r._hasProductRepo) return false;
+      }
     }
     return true;
   });
@@ -1338,9 +1360,7 @@ function renderCards(){document.getElementById('card-grid').innerHTML=filteredRe
       <div style="display:flex;gap:10px;align-items:center;">
         ${r.url?`<a class="card-link" href="${esc(r.url)}" target="_blank">View</a>`:''}
         ${r.blog&&r.blog!==r.url?`<a class="card-link" href="${esc(r.blog)}" target="_blank">Website</a>`:''}
-        <button class="btn-save-airtable" onclick="pushOneToAirtable('${esc(r.username)}',this)" title="Save to Airtable">
-          <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M7 2v7M4 6l3 3 3-3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M2 11h10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
-        </button>
+        <button class="btn-save-airtable" data-username="${esc(r.username)}" title="Save to Airtable">${SAVE_ICON}</button>
       </div>
     </div>
   </div>`;}).join('');}
@@ -1398,6 +1418,8 @@ function clearHistory(){if(!confirm('Clear all saved results and history?'))retu
 function exportCSV(){const d=filteredResults.length?filteredResults:allResults;if(!d.length)return alert('No results');const h=['Source','Name','Username','Company','Bio','Location','Signals','URL','New'];const rows=d.map(r=>[r.source,`"${(r.name||'').replace(/"/g,'""')}"`,r.username,`"${(r.company||'').replace(/"/g,'""')}"`,`"${(r.bio||'').replace(/"/g,'""').substring(0,200)}"`,`"${(r.location||'').replace(/"/g,'""')}"`,`"${(r.signals||[]).join('; ')}"`,r.url,r.isNew?'YES':'']);const csv=[h.join(','),...rows.map(r=>r.join(','))].join('\n');const blob=new Blob([csv],{type:'text/csv'});const u=URL.createObjectURL(blob);const a=document.createElement('a');a.href=u;a.download=`scout_radar_${new Date().toISOString().split('T')[0]}.csv`;a.click();URL.revokeObjectURL(u);}
 
 // ===================== AIRTABLE PUSH =====================
+const SAVE_ICON = '<svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M7 2v7M4 6l3 3 3-3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M2 11h10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>';
+
 async function pushOneToAirtable(username, btnEl) {
   const founder = allResults.find(r => r.username === username);
   if (!founder) { showToast('Founder not found'); return; }
@@ -1416,12 +1438,12 @@ async function pushOneToAirtable(username, btnEl) {
       showToast(`${founder.name} saved to Airtable`);
     } else {
       btnEl.disabled = false;
-      btnEl.innerHTML = '<svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M7 2v7M4 6l3 3 3-3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M2 11h10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>';
+      btnEl.innerHTML = SAVE_ICON;
       showToast('Error: ' + (data.error || 'Failed'));
     }
   } catch(e) {
     btnEl.disabled = false;
-    btnEl.innerHTML = '<svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M7 2v7M4 6l3 3 3-3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M2 11h10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>';
+    btnEl.innerHTML = SAVE_ICON;
     showToast('Network error');
   }
 }
@@ -1442,7 +1464,6 @@ async function pushAllToAirtable() {
     const result = await resp.json();
     if (result.success) {
       showToast(`${result.created} founders pushed to Airtable`);
-      // Mark all save buttons as saved
       document.querySelectorAll('.btn-save-airtable').forEach(b => {
         b.classList.add('saved');
         b.innerHTML = '✓';
@@ -1452,12 +1473,20 @@ async function pushAllToAirtable() {
     }
   } catch(e) {
     showToast('Network error');
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = origHTML;
   }
-  btn.disabled = false;
-  btn.innerHTML = origHTML;
 }
 
 // ===================== INIT =====================
+document.getElementById('card-grid').addEventListener('click', e => {
+  const btn = e.target.closest('.btn-save-airtable');
+  if (btn && !btn.disabled && !btn.classList.contains('saved')) {
+    pushOneToAirtable(btn.dataset.username, btn);
+  }
+});
+
 loadConfig(); updateTokenStatus();
 </script>
 </body>
