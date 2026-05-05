@@ -864,14 +864,10 @@ async function searchGitHub(cfg) {
     `location:${cfg.location}+type:user+AI+founder`,
     `location:${cfg.location}+type:user+LLM+founder`,
     `location:${cfg.location}+type:user+AI+building`,
-    `location:${cfg.location}+type:user+agentic`,
-    `location:${cfg.location}+type:user+AI+startup`,
     `location:Bangalore+type:user+AI+founder`,
     `location:Bengaluru+type:user+AI+founder`,
-    `location:Mumbai+type:user+AI+founder`,
-    `location:Hyderabad+type:user+AI+founder`,
   ];
-  const repoPages = hasToken ? 2 : 1;
+  const repoPages = 1;
   const userPages = 1;
   const searchDelay = hasToken ? 1600 : 4200;
   const totalQueries = (repoQueries.length * repoPages) + (userQueries.length * userPages);
@@ -884,7 +880,7 @@ async function searchGitHub(cfg) {
       qIdx++;
       updateProgress(`GitHub Repos: ${qIdx}/${totalQueries}`, (qIdx/totalQueries)*35);
       try {
-        const resp = await fetch(`https://api.github.com/search/repositories?q=${repoQueries[i]}&sort=updated&per_page=100&page=${page}`, {headers});
+        const resp = await fetch(`https://api.github.com/search/repositories?q=${repoQueries[i]}&sort=updated&per_page=50&page=${page}`, {headers});
         if (resp.status===403||resp.status===429) { await handleRateLimit(resp, qIdx, totalQueries); page--; continue; }
         const data = await resp.json();
         if (!data.items || !data.items.length) break;
@@ -967,13 +963,8 @@ async function searchGitHub(cfg) {
           const profiles = await Promise.all(chunk.map(u =>
             fetch(`https://api.github.com/users/${u.login}`, {headers}).then(r=>r.ok?r.json():null).catch(()=>null)
           ));
-          const enrichments = await Promise.all(
-            profiles.filter(Boolean).map(p => enrichProfile(p.login, headers))
-          );
-          let eIdx = 0;
           profiles.forEach(p => {
             if (!p) return;
-            const e = enrichments[eIdx++];
             const profileText = ((p.bio||'')+(p.company||'')+'').toLowerCase();
             const hasTag = profileTags.some(tag => profileText.includes(tag));
             const matchedTags = profileTags.filter(tag => profileText.includes(tag));
@@ -983,9 +974,9 @@ async function searchGitHub(cfg) {
               followers:p.followers||0, repos:p.public_repos||0,
               created:p.created_at, url:p.html_url, points:0,
               avatar:p.avatar_url, blog:p.blog||'',
-              _recentCommits:e._recentCommits, _topStars:e._topStars,
-              _hasProductRepo:e._hasProductRepo, _hasOrg:e._hasOrg,
-              _onlyTutorials:e._onlyTutorials, _repoTopics:e._repoTopics,
+              _recentCommits:undefined, _topStars:0,
+              _hasProductRepo:!!(p.blog), _hasOrg:false,
+              _onlyTutorials:false, _repoTopics:'',
               _matchedTags: matchedTags,
               _tagFiltered: hasTag,
               _isIndiaLinked: true,
