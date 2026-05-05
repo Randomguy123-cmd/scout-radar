@@ -8,5 +8,8 @@
   "routes": [
     { "src": "/api/(.*)", "dest": "/api/$1.js" },
     { "src": "/(.*)", "dest": "/public/$1" }
+  ],
+  "crons": [
+    { "path": "/api/scan", "schedule": "30 2 * * *" }
   ]
 }
