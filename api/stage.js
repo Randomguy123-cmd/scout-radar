@@ -2,21 +2,20 @@
 // Saves to Airtable with status="Inbox" for review in the dashboard.
 // Dashboard reads via GET /api/load, user selects and pushes to "New".
 
-const AIRTABLE_BASE  = 'appwiWdsmAvz62CTK';
-const AIRTABLE_TABLE = 'tblW6mU9xd0BKTdLL';
+const AIRTABLE_BASE  = 'appoVW6cJXYYhHKnU';
+const AIRTABLE_TABLE = 'tblw5OF9akHaMtH38';
 
 const F = {
-  name:       'fldyTMMYSU53HVtyo',
-  company:    'fldSwBGTmB83AqWkz',
-  location:   'flduL5j1GQWVqTDvT',
-  linkedinUrl:'fld3xYqcUzx9OOcLS',
-  source:     'fld6E7ayV5lCQ0AgL',
-  signals:    'fldQznFe4G3uKoWIW',
-  score:      'fldfM2WorISthIbPR',
-  bio:        'fldD3oJ4jm5bMBqNV',
-  companyUrl: 'fldkLcnGbjLl7ZKVj',
-  status:     'fldfSW7ViqWivnBzS',
-  dateFound:  'fldEqPdVh0EkRZy1U',
+  name:       'Name',
+  company:    'Company',
+  location:   'Location',
+  linkedinUrl:'URL',
+  source:     'Source',
+  signals:    'Signals',
+  score:      'Score',
+  bio:        'Bio',
+  companyUrl: 'Company URL',
+  dateFound:  'Date Found',
 };
 
 const INDIA_CITIES = ['india','bangalore','bengaluru','mumbai','delhi','hyderabad','pune','chennai','kolkata','noida','gurgaon','gurugram','jaipur','ahmedabad','kochi','ncr','indore','karnataka','maharashtra','telangana'];
@@ -66,7 +65,6 @@ module.exports = async (req, res) => {
         [F.score]:      scoreProfile(p.bio || '', p.location || ''),
         [F.bio]:        p.bio || '',
         [F.companyUrl]: p.website || '',
-        [F.status]:     'Reviewing',
         [F.dateFound]:  today,
       }
     }));
