@@ -409,9 +409,11 @@ async function searchDevTo() {
         if (!username || seen.has(username)) continue;
         const text = (post.title + ' ' + (post.description || '')).toLowerCase();
         const loc = (u.location || '').toLowerCase();
-        // Keep if India signal OR Indian name OR builder signal in title
         const indiaSignal = hasIndiaSignal('', loc, '') || hasIndianName(u.name || '');
-        if (!indiaSignal && !builderRe.test(text)) continue;
+        // Always require India signal — we only want Indian founders
+        if (!indiaSignal) continue;
+        // Also require builder signal unless it's the 'india' tag (already scoped)
+        if (tag !== 'india' && !builderRe.test(text)) continue;
         seen.add(username);
         results.push({
           name: u.name || username,
