@@ -93,7 +93,7 @@ async function fetchExistingNames(atToken) {
     if (offset) url.searchParams.set('offset', offset);
 
     const resp = await fetch(url.toString(), { headers: { Authorization: `Bearer ${atToken}` } });
-    if (!resp.ok) break;
+    if (!resp.ok) { console.error('[scan] fetchExistingNames error', resp.status, await resp.text()); break; }
     const data = await resp.json();
     (data.records || []).forEach(r => {
       const n = r.fields[F.name];
@@ -492,7 +492,7 @@ module.exports = async (req, res) => {
     return res.status(401).json({ error: 'Unauthorized' });
   }
 
-  const ghToken    = process.env.GITHUB_TOKEN;
+  const ghToken    = process.env.GH_SCAN_TOKEN || process.env.GITHUB_TOKEN;
   const atToken    = process.env.AIRTABLE_TOKEN;
   const phClientId = process.env.PH_CLIENT_ID;
   const phSecret   = process.env.PH_CLIENT_SECRET;
