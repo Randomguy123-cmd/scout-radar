@@ -246,6 +246,11 @@
   </div>
 
   <ul class="sidebar-nav" id="sidebar-nav">
+    <li><a data-source="masterboard" onclick="openDashboard(this)">
+      <span class="nav-icon"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M8 1.5l1.8 3.6 4 .58-2.9 2.82.68 3.98L8 10.4l-3.58 1.98.68-3.98L2.2 5.68l4-.58L8 1.5z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg></span>
+      <span>Dashboard</span>
+      <span class="nav-count" id="nav-master-count">—</span>
+    </a></li>
     <li><a class="active" data-source="pool" onclick="openPool(this)">
       <span class="nav-icon"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="5" r="3.5" stroke="currentColor" stroke-width="1.5"/><path d="M2 13c0-2.5 2.686-4.5 6-4.5s6 2 6 4.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></span>
       <span>Pool</span>
@@ -275,15 +280,6 @@
       <span class="nav-icon"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><polyline points="1,13 5,7 8,10 11,5 15,3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
       <span>Trending</span>
       <span class="nav-count" id="nav-trending-count">—</span>
-    </a></li>
-  </ul>
-
-  <div class="sidebar-section-label">Highlights</div>
-  <ul class="sidebar-nav">
-    <li><a data-source="masterboard" onclick="openMasterboard(this)">
-      <span class="nav-icon"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M8 1.5l1.8 3.6 4 .58-2.9 2.82.68 3.98L8 10.4l-3.58 1.98.68-3.98L2.2 5.68l4-.58L8 1.5z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg></span>
-      <span>Masterboard</span>
-      <span class="nav-count" id="nav-master-count">—</span>
     </a></li>
   </ul>
 
@@ -485,11 +481,11 @@
     <div class="card-grid" id="pool-grid"></div>
   </div>
 
-  <!-- Masterboard View -->
+  <!-- Dashboard View -->
   <div id="masterboard-area" style="display:none;padding:0 24px 24px;">
     <div style="display:flex;align-items:center;gap:8px;margin-bottom:16px;flex-wrap:wrap;">
       <span id="masterboard-total" style="font-size:13px;color:var(--text3);"></span>
-      <button class="btn" onclick="pushSelectedMasterboard()" id="masterboard-push-btn" disabled style="margin-left:auto;background:#7C3AED;color:white;border:none;opacity:0.4;cursor:not-allowed;">
+      <button class="btn" onclick="pushSelectedDashboard()" id="masterboard-push-btn" disabled style="margin-left:auto;background:#7C3AED;color:white;border:none;opacity:0.4;cursor:not-allowed;">
         <svg width="13" height="13" viewBox="0 0 14 14" fill="none"><path d="M7 2v7M4 6l3 3 3-3" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M2 11h10" stroke="white" stroke-width="1.5" stroke-linecap="round"/></svg>
         Push to Shortlist
       </button>
@@ -1571,23 +1567,23 @@ function toggleStar(id) {
     const starred = starredIds.has(id);
     btn.textContent = starred ? '★' : '☆';
     btn.style.opacity = starred ? '1' : '0.3';
-    btn.title = starred ? 'Remove from Masterboard' : 'Add to Masterboard';
+    btn.title = starred ? 'Remove from Dashboard' : 'Add to Dashboard';
   }
   // Re-render masterboard if it's visible
-  if (document.getElementById('masterboard-area').style.display !== 'none') renderMasterboard();
+  if (document.getElementById('masterboard-area').style.display !== 'none') renderDashboard();
 }
 
-function openMasterboard(el) {
+function openDashboard(el) {
   document.querySelectorAll('.sidebar-nav a').forEach(a => a.classList.remove('active'));
   if (el) el.classList.add('active');
   document.getElementById('pool-area').style.display = 'none';
   document.getElementById('inbox-area').style.display = 'none';
   document.getElementById('masterboard-area').style.display = '';
-  document.getElementById('topbar-title').textContent = 'Masterboard';
-  if (!poolRecords.length) loadPool().then(renderMasterboard); else renderMasterboard();
+  document.getElementById('topbar-title').textContent = 'Dashboard';
+  if (!poolRecords.length) loadPool().then(renderDashboard); else renderDashboard();
 }
 
-function renderMasterboard() {
+function renderDashboard() {
   const starred = poolRecords.filter(r => starredIds.has(r.airtableId));
   const total = document.getElementById('masterboard-total');
   const empty = document.getElementById('masterboard-empty');
@@ -1602,7 +1598,7 @@ function renderMasterboard() {
     const sel  = masterSelected.has(r.airtableId);
     return `<div class="card" data-id="${r.airtableId}" style="position:relative;cursor:pointer;${sel ? 'outline:2px solid var(--primary);outline-offset:2px;' : ''}" onclick="toggleMasterSelect('${r.airtableId}',this)">
       <div style="position:absolute;top:12px;right:12px;display:flex;gap:6px;align-items:center;">
-        <button onclick="event.stopPropagation();toggleStar('${r.airtableId}')" style="background:none;border:none;cursor:pointer;padding:2px;font-size:15px;opacity:1;" title="Remove from Masterboard">★</button>
+        <button onclick="event.stopPropagation();toggleStar('${r.airtableId}')" style="background:none;border:none;cursor:pointer;padding:2px;font-size:15px;opacity:1;" title="Remove from Dashboard">★</button>
         ${sel ? `<span style="font-size:11px;font-weight:700;color:var(--primary);background:var(--blue-light);padding:2px 7px;border-radius:10px;">&#10003;</span>` : ''}
       </div>
       <div class="card-top" style="padding-right:80px;">
@@ -1622,17 +1618,17 @@ function renderMasterboard() {
       </div>
     </div>`;
   }).join('');
-  updateMasterboardPushBtn();
+  updateDashboardPushBtn();
 }
 
 function toggleMasterSelect(id, el) {
   if (masterSelected.has(id)) { masterSelected.delete(id); el.style.outline = ''; }
   else { masterSelected.add(id); el.style.outline = '2px solid var(--primary)'; el.style.outlineOffset = '2px'; }
-  updateMasterboardPushBtn();
-  renderMasterboard();
+  updateDashboardPushBtn();
+  renderDashboard();
 }
 
-function updateMasterboardPushBtn() {
+function updateDashboardPushBtn() {
   const n = masterSelected.size;
   const btn = document.getElementById('masterboard-push-btn');
   btn.disabled = n === 0;
@@ -1641,7 +1637,7 @@ function updateMasterboardPushBtn() {
   btn.querySelector('svg').nextSibling.textContent = n > 0 ? ` Push ${n} to Shortlist` : ' Push to Shortlist';
 }
 
-async function pushSelectedMasterboard() {
+async function pushSelectedDashboard() {
   if (!masterSelected.size) return;
   const btn = document.getElementById('masterboard-push-btn');
   btn.disabled = true; btn.style.opacity = '0.6';
@@ -1649,7 +1645,7 @@ async function pushSelectedMasterboard() {
   try {
     const resp = await fetch('/api/shortlist', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ records: toSend }) });
     const data = await resp.json();
-    if (data.success) { showToast(`${data.created} profile${data.created !== 1 ? 's' : ''} added to Shortlist`); masterSelected.clear(); renderMasterboard(); }
+    if (data.success) { showToast(`${data.created} profile${data.created !== 1 ? 's' : ''} added to Shortlist`); masterSelected.clear(); renderDashboard(); }
     else showToast('Error: ' + (data.error || 'Failed'));
   } catch(e) { showToast('Network error'); }
   btn.disabled = false; btn.style.opacity = '1';
@@ -1923,7 +1919,7 @@ function renderPool() {
     const starred = starredIds.has(r.airtableId);
     return `<div class="card" data-id="${r.airtableId}" style="position:relative;cursor:pointer;${sel ? 'outline:2px solid var(--primary);outline-offset:2px;' : ''}" onclick="togglePoolSelect('${r.airtableId}',this)">
       <div style="position:absolute;top:12px;right:12px;display:flex;align-items:center;gap:6px;">
-        <button onclick="event.stopPropagation();toggleStar('${r.airtableId}')" title="${starred ? 'Remove from Masterboard' : 'Add to Masterboard'}" style="background:none;border:none;cursor:pointer;padding:2px;line-height:1;font-size:15px;opacity:${starred ? '1' : '0.3'};transition:opacity 0.15s;" id="star-${r.airtableId}">${starred ? '★' : '☆'}</button>
+        <button onclick="event.stopPropagation();toggleStar('${r.airtableId}')" title="${starred ? 'Remove from Dashboard' : 'Add to Dashboard'}" style="background:none;border:none;cursor:pointer;padding:2px;line-height:1;font-size:15px;opacity:${starred ? '1' : '0.3'};transition:opacity 0.15s;" id="star-${r.airtableId}">${starred ? '★' : '☆'}</button>
         ${sel ? `<span style="font-size:11px;font-weight:700;color:var(--primary);background:var(--blue-light);padding:2px 7px;border-radius:10px;">&#10003;</span>` : `<span style="display:flex;align-items:center;gap:4px;"><span style="width:9px;height:9px;border-radius:50%;background:${mc};display:inline-block;flex-shrink:0;"></span><span style="font-size:11px;font-weight:600;color:${mc};">${ml}</span></span>`}
       </div>
       <div class="card-top" style="padding-right:110px;">
