@@ -11,8 +11,8 @@ module.exports = async (req, res) => {
     return res.status(500).json({ error: 'AIRTABLE_TOKEN not configured' });
   }
 
-  const BASE_ID = 'appwiWdsmAvz62CTK';
-  const TABLE_ID = 'tblW6mU9xd0BKTdLL';
+  const BASE_ID = 'appoVW6cJXYYhHKnU';
+  const TABLE_ID = 'tblw5OF9akHaMtH38';
 
   // Field IDs for the Scouted Founders table
   const F = {
