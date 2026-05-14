@@ -646,7 +646,11 @@ function scoreProfile(p, cfg) {
   if(p._hasProductRepo)s+=10; if(p._hasOrg)s+=8;
   if(p.source==='hn'&&p.points)s+=Math.min(p.points/5,20);
   if(p.source==='ph'){s+=12;if(p._phVotes>50)s+=15;else if(p._phVotes>20)s+=10;else if(p._phVotes>5)s+=5;}
-  if(p._isIndiaLinked)s+=20;
+  const _locT=(p.location||'').toLowerCase(),_bioCoT=((p.bio||'')+' '+(p.company||'')).toLowerCase();
+  const _isIndiaBased=INDIA_CITIES.some(c=>_locT.includes(c));
+  const _isIndiaOrigin=INDIA_INSTITUTIONS.some(k=>(_bioCoT+_locT).includes(k))||INDIA_COMPANIES.some(k=>_bioCoT.includes(k));
+  const _isDiaspora=_isIndiaOrigin&&DIASPORA_LOCATIONS.some(d=>_locT.includes(d))&&!_isIndiaBased;
+  if(_isIndiaBased)s+=20; else if(_isDiaspora)s+=12; else if(_isIndiaOrigin)s+=15;
   if(p.source==='manual')s+=15;
   fundedKw.forEach(k=>{if(text.includes(k))s-=20});
   let emp=false; EMPLOYEE_SIGNALS.forEach(x=>{if(text.includes(x)){s-=15;emp=true;}});
@@ -671,7 +675,16 @@ function extractSignals(p, cfg) {
   strongBg.forEach(k=>{if(text.includes(k))sigs.push(k.replace(/^ex-/i,'').toUpperCase())});
   if(p.source==='hn'){sigs.push('Show HN');if(p.points>50)sigs.push('HN Popular');}
   if(p.source==='ph'){sigs.push('Product Hunt');if(p._phVotes>50)sigs.push('PH Popular');}
-  if(p._isIndiaLinked)sigs.push('India-linked');
+  const __loc=(p.location||'').toLowerCase(),__bio=((p.bio||'')+' '+(p.company||'')).toLowerCase();
+  const __based=INDIA_CITIES.some(c=>__loc.includes(c));
+  const __originEdu=INDIA_INSTITUTIONS.some(k=>(__bio+__loc).includes(k));
+  const __originWork=INDIA_COMPANIES.some(k=>__bio.includes(k));
+  const __diaspora=(__originEdu||__originWork)&&DIASPORA_LOCATIONS.some(d=>__loc.includes(d))&&!__based;
+  if(__based)sigs.push('India Based');
+  if(__originEdu)sigs.push('India Origin · Edu');
+  if(__originWork)sigs.push('India Origin · Work');
+  if(__diaspora)sigs.push('Diaspora');
+  else if(p._isIndiaLinked&&!__based&&!__originEdu&&!__originWork)sigs.push('India-linked');
   if(p._foundRepo)sigs.push('Has Repo');
   if(p._matchedTags&&p._matchedTags.length)p._matchedTags.forEach(t=>sigs.push(t.charAt(0).toUpperCase()+t.slice(1)));
   return[...new Set(sigs)];
@@ -890,13 +903,25 @@ async function enrichProfile(username, headers) {
 }
 
 // ===================== GITHUB SEARCH (Repo-based) =====================
-const INDIA_CITIES=['india','bangalore','bengaluru','mumbai','delhi','hyderabad','pune','chennai','kolkata','noida','gurgaon','gurugram','jaipur','ahmedabad','kochi','chandigarh','lucknow','ncr','indore','surat','bhopal','nagpur','vadodara','coimbatore','visakhapatnam','vizag','thiruvananthapuram','trivandrum','bhubaneswar','patna','ranchi','mysuru','mysore','nashik','madurai','karnataka','maharashtra','telangana','rajasthan','gujarat','kerala'];
-const INDIA_INSTITUTIONS=['iit ','iit-','iitb','iitd','iitm','iitk','iith','iiti','iisc','bits pilani','bits-pilani','nit ','isb ','iiit','manipal','vit ','srm ','amity','anna university','jadavpur','iim ','nift','nid ','iiser','dtu ','nsut','pec '];
+const INDIA_CITIES=['india','bangalore','bengaluru','mumbai','delhi','hyderabad','pune','chennai','kolkata','noida','gurgaon','gurugram','jaipur','ahmedabad','kochi','chandigarh','lucknow','ncr','indore','surat','bhopal','nagpur','vadodara','coimbatore','visakhapatnam','vizag','thiruvananthapuram','trivandrum','bhubaneswar','patna','ranchi','mysuru','mysore','nashik','madurai','karnataka','maharashtra','telangana','rajasthan','gujarat','kerala','mangalore','hubli','dharwad'];
+const INDIA_INSTITUTIONS=['iit ','iit,','iit-','iitb','iitd','iitm','iitk','iith','iiti','iitkgp','iit bombay','iit delhi','iit madras','iit kanpur','iit kharagpur','iit roorkee','iit guwahati','iisc','bits pilani','bits-pilani','bits goa','bits hyderabad','nit ','isb ','iiit','manipal','vit ','srm ','amity','anna university','jadavpur','iim ','iim ahmedabad','iim bangalore','nift','nid ','iiser','dtu ','nsut','nsit','pec ','coep'];
+const INDIA_COMPANIES=['flipkart','razorpay','zomato','swiggy','paytm','cred','meesho','phonepe','freshworks','zepto','groww','browserstack','zoho','juspay','setu','unacademy','sharechat','nykaa','policybazaar','dunzo','byju','slice','ola electric','springworks','chargebee','postman','hasura','sarvam','krutrim','healthify','lenskart','mamaearth','cars24','urban company','cleartax','delhivery','shiprocket','udaan','moglix','zetwerk','ofbusiness','mfine','spinny'];
+const DIASPORA_LOCATIONS=['san francisco','bay area','palo alto','mountain view','menlo park','sunnyvale','cupertino','san jose','santa clara','new york','nyc','brooklyn','seattle','bellevue','redmond','boston','cambridge','austin','chicago','los angeles','london','berlin','singapore','toronto','vancouver','dubai','amsterdam'];
 function dateDaysAgo(days){ const d=new Date(Date.now()-days*864e5); return d.toISOString().slice(0,10); }
 
-function hasIndiaSignal(user) {
+function hasIndiaLocation(user) {
   const text = ((user.location||'')+(user.bio||'')+(user.company||'')).toLowerCase();
   return INDIA_CITIES.some(c=>text.includes(c)) || INDIA_INSTITUTIONS.some(c=>text.includes(c));
+}
+function hasIndiaOrigin(user) {
+  const text = ((user.bio||'')+(user.company||'')+(user.location||'')).toLowerCase();
+  return INDIA_INSTITUTIONS.some(k=>text.includes(k)) || INDIA_COMPANIES.some(k=>text.includes(k));
+}
+function isInDiaspora(user) {
+  return DIASPORA_LOCATIONS.some(d=>(user.location||'').toLowerCase().includes(d));
+}
+function hasIndiaSignal(user) {
+  return hasIndiaLocation(user) || hasIndiaOrigin(user);
 }
 
 async function searchGitHub(cfg) {
@@ -927,6 +952,10 @@ async function searchGitHub(cfg) {
     `location:${cfg.location}+type:user+AI+building`,
     `location:Bangalore+type:user+AI+founder`,
     `location:Bengaluru+type:user+AI+founder`,
+    // Diaspora: Indian-origin founders building globally
+    `type:user+IIT+founder`,
+    `type:user+BITS+founder`,
+    `type:user+IIT+CEO`,
   ];
   const repoPages = 1;
   const userPages = 1;
