@@ -504,6 +504,7 @@ module.exports = async (req, res) => {
 
   const startTime = Date.now();
   console.log('[scan] Starting daily scout scan');
+  console.log('[scan] GH_SCAN_TOKEN present:', !!ghToken, ghToken ? `(starts with ${ghToken.slice(0,8)}...)` : '(missing)');
 
   try {
     const existingNames = await fetchExistingNames(atToken);
