@@ -1803,14 +1803,17 @@ async function loadPool() {
     poolRecords = (data.records || []).map(r => ({ ...r, matchScore: poolMatchScore(r) }));
     poolRecords.sort((a, b) => b.matchScore - a.matchScore || b.score - a.score);
 
-    // Update nav counts
+    // Update nav counts (exclude X / Twitter from pool count — shown separately)
     const ghCount      = poolRecords.filter(r => r.source === 'GitHub').length;
     const hnCount      = poolRecords.filter(r => r.source === 'Hacker News').length;
     const phCount      = poolRecords.filter(r => r.source === 'Product Hunt').length;
     const devtoCount   = poolRecords.filter(r => r.source === 'Dev.to').length;
     const trendingCount= poolRecords.filter(r => r.source === 'GitHub Trending').length;
-    document.getElementById('pool-total').textContent = `${poolRecords.length} profiles`;
-    document.getElementById('nav-pool-count').textContent = poolRecords.length;
+    const xCount       = poolRecords.filter(r => r.source === 'X / Twitter').length;
+    const poolCount    = poolRecords.filter(r => r.source !== 'X / Twitter').length;
+    document.getElementById('pool-total').textContent = `${poolCount} profiles`;
+    document.getElementById('nav-pool-count').textContent = poolCount;
+    document.getElementById('nav-inbox-count').textContent = xCount || '0';
     document.getElementById('nav-gh-count').textContent = ghCount;
     document.getElementById('nav-hn-count').textContent = hnCount;
     document.getElementById('nav-ph-count').textContent = phCount;
