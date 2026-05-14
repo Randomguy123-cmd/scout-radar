@@ -19,7 +19,7 @@ jobs:
 
       - name: Run scan
         env:
-          GITHUB_TOKEN: ${{ secrets.GH_SCAN_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
           AIRTABLE_TOKEN: ${{ secrets.AIRTABLE_TOKEN }}
-          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+          CRON_SECRET: ${{ secrets.CRON_JOB }}
         run: node scripts/run-scan.js

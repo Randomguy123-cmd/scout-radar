@@ -500,7 +500,7 @@ module.exports = async (req, res) => {
     return res.status(401).json({ error: 'Unauthorized' });
   }
 
-  const ghToken = process.env.GITHUB_TOKEN;
+  const ghToken = process.env.GITHUB_TOKEN || process.env.GH_TOKEN;
   const atToken = process.env.AIRTABLE_TOKEN;
   if (!atToken) return res.status(500).json({ error: 'AIRTABLE_TOKEN not set' });
 
