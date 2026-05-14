@@ -391,6 +391,8 @@
     </div>
   </div>
 
+  <!-- Scan UI (hidden when Pool or Inbox is active) -->
+  <div id="scan-ui">
   <!-- KPI Strip -->
   <div class="kpi-strip">
     <div class="kpi-card">
@@ -446,6 +448,8 @@
     </select>
     <span class="filter-count" id="filter-count"></span>
   </div>
+
+  </div><!-- /scan-ui -->
 
   <!-- Results -->
   <div class="results" id="results-area">
@@ -1562,10 +1566,17 @@ function renderTable(){document.getElementById('table-body').innerHTML=filteredR
 function getTagClass(s){s=s.toLowerCase();if(s==='founder'||s==='c-level')return'tag-founder';if(s==='ai'||s==='agents'||s==='llm'||s==='genai')return'tag-ai';if(s==='stealth')return'tag-stealth';if(s==='building'||s==='bootstrapped')return'tag-building';if(s==='shipped'||s==='saas'||s==='product')return'tag-shipped';if(s==='active'||s==='website'||s==='has org')return'tag-shipped';if(s==='show hn'||s==='hn popular'||s==='product hunt'||s==='ph popular')return'tag-hn';if(s==='india-linked'||s==='has repo')return'tag-shipped';if(s==='inactive'||s==='employee')return'tag-warning';if(s.startsWith('★'))return'tag-stars';if(s==='imported')return'tag-manual';if(['iit','iisc','bits','nit','google','amazon','microsoft','flipkart','razorpay','uber','faang','stanford','mit','berkeley','deepmind','openai'].some(k=>s.includes(k)))return'tag-bg';return'tag-default';}
 
 // ===================== UI =====================
+function showScanUI(show) {
+  const el = document.getElementById('scan-ui');
+  if (el) el.style.display = show ? '' : 'none';
+}
+
 function setSource(src, btn){
   currentSource=src;
+  showScanUI(true);
   document.getElementById('results-area').style.display='';
   document.getElementById('inbox-area').style.display='none';
+  document.getElementById('pool-area').style.display='none';
   document.querySelectorAll('#sidebar-nav a').forEach(a=>a.classList.toggle('active',a.dataset.source===src));
   const labels = {all:'Scan All', github:'Scan GitHub', hn:'Scan HN', ph:'Scan Product Hunt', manual:'Import'};
   const scanLabelEl = document.getElementById('scan-label');
@@ -1582,7 +1593,9 @@ let inboxSelected = new Set();
 function openInbox(btn) {
   document.querySelectorAll('#sidebar-nav a').forEach(a=>a.classList.remove('active'));
   if (btn) btn.classList.add('active');
+  showScanUI(false);
   document.getElementById('results-area').style.display='none';
+  document.getElementById('pool-area').style.display='none';
   document.getElementById('inbox-area').style.display='';
   loadInbox();
 }
@@ -1591,8 +1604,9 @@ function openInbox(btn) {
 let poolRecords = [];
 
 function openPool(el) {
-  document.querySelectorAll('.sidebar-nav a').forEach(a => a.classList.remove('active'));
+  document.querySelectorAll('#sidebar-nav a').forEach(a => a.classList.remove('active'));
   if (el) el.classList.add('active');
+  showScanUI(false);
   document.getElementById('results-area').style.display = 'none';
   document.getElementById('inbox-area').style.display = 'none';
   document.getElementById('pool-area').style.display = '';
