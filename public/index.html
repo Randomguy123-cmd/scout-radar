@@ -245,37 +245,31 @@
     <h1><span>Scout</span> Radar</h1>
   </div>
 
-  <div class="sidebar-section-label">Live Scan</div>
   <ul class="sidebar-nav" id="sidebar-nav">
-    <li><a class="active" data-source="all" onclick="setSource('all',this)">
-      <span class="nav-icon"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><rect x="1" y="1" width="6" height="6" rx="1.5" stroke="currentColor" stroke-width="1.5"/><rect x="9" y="1" width="6" height="6" rx="1.5" stroke="currentColor" stroke-width="1.5"/><rect x="1" y="9" width="6" height="6" rx="1.5" stroke="currentColor" stroke-width="1.5"/><rect x="9" y="9" width="6" height="6" rx="1.5" stroke="currentColor" stroke-width="1.5"/></svg></span>
-      <span>All Sources</span>
-      <span class="nav-count" id="nav-all-count">0</span>
-    </a></li>
-    <li><a data-source="github" onclick="setSource('github',this)">
-      <span class="nav-icon"><svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg></span>
-      <span>GitHub</span>
-      <span class="nav-count" id="nav-gh-count">0</span>
-    </a></li>
-    <li><a data-source="hn" onclick="setSource('hn',this)">
-      <span class="nav-icon"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><rect x="1" y="1" width="14" height="14" rx="2" stroke="currentColor" stroke-width="1.5"/><text x="8" y="12" text-anchor="middle" font-size="10" font-weight="700" fill="currentColor">Y</text></svg></span>
-      <span>Hacker News</span>
-      <span class="nav-count" id="nav-hn-count">0</span>
-    </a></li>
-    <li><a data-source="ph" onclick="setSource('ph',this)">
-      <span class="nav-icon"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="7" stroke="currentColor" stroke-width="1.5"/><path d="M6 4.5h2.5a2.5 2.5 0 010 5H6V4.5z" stroke="currentColor" stroke-width="1.5"/><line x1="6" y1="9.5" x2="6" y2="12" stroke="currentColor" stroke-width="1.5"/></svg></span>
-      <span>Product Hunt</span>
-      <span class="nav-count" id="nav-ph-count">0</span>
-    </a></li>
-  </ul>
-
-  <div class="sidebar-section-label">Database</div>
-  <ul class="sidebar-nav" id="sidebar-nav-db">
-    <li><a data-source="pool" onclick="openPool(this)">
+    <li><a class="active" data-source="pool" onclick="openPool(this)">
       <span class="nav-icon"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="5" r="3.5" stroke="currentColor" stroke-width="1.5"/><path d="M2 13c0-2.5 2.686-4.5 6-4.5s6 2 6 4.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></span>
       <span>Pool</span>
       <span class="nav-count" id="nav-pool-count">—</span>
     </a></li>
+    <li><a data-source="github" onclick="openSource('GitHub',this)">
+      <span class="nav-icon"><svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg></span>
+      <span>GitHub</span>
+      <span class="nav-count" id="nav-gh-count">—</span>
+    </a></li>
+    <li><a data-source="hn" onclick="openSource('Hacker News',this)">
+      <span class="nav-icon"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><rect x="1" y="1" width="14" height="14" rx="2" stroke="currentColor" stroke-width="1.5"/><text x="8" y="12" text-anchor="middle" font-size="10" font-weight="700" fill="currentColor">Y</text></svg></span>
+      <span>Hacker News</span>
+      <span class="nav-count" id="nav-hn-count">—</span>
+    </a></li>
+    <li><a data-source="ph" onclick="openSource('Product Hunt',this)">
+      <span class="nav-icon"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="7" stroke="currentColor" stroke-width="1.5"/><path d="M6 4.5h2.5a2.5 2.5 0 010 5H6V4.5z" stroke="currentColor" stroke-width="1.5"/><line x1="6" y1="9.5" x2="6" y2="12" stroke="currentColor" stroke-width="1.5"/></svg></span>
+      <span>Product Hunt</span>
+      <span class="nav-count" id="nav-ph-count">—</span>
+    </a></li>
+  </ul>
+
+  <div class="sidebar-section-label">Pipeline</div>
+  <ul class="sidebar-nav" id="sidebar-nav-db">
     <li><a data-source="inbox" onclick="openInbox(this)">
       <span class="nav-icon"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M2.5 1h11L15 5v1H1V5L2.5 1zM1 6h14v8a1 1 0 01-1 1H2a1 1 0 01-1-1V6z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><path d="M5 9h6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></span>
       <span>X Profiles</span>
@@ -366,109 +360,19 @@
 <div class="main">
   <!-- Top Bar -->
   <div class="topbar">
-    <div class="search-wrap">
-      <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="7" cy="7" r="5.5" stroke="currentColor" stroke-width="1.5"/><line x1="11" y1="11" x2="14.5" y2="14.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
-      <input class="search-input" type="text" placeholder="Search name, company, keyword..." oninput="filterText(this.value)">
-    </div>
+    <h2 id="topbar-title" style="font-size:16px;font-weight:700;color:var(--text);margin:0;">Pool</h2>
     <div class="topbar-right">
-      <div class="view-toggle">
-        <button class="active" id="view-cards" onclick="setView('cards')">Cards</button>
-        <button id="view-table" onclick="setView('table')">Table</button>
-      </div>
-      <button class="btn btn-secondary" onclick="exportCSV()">
+      <button class="btn btn-secondary" onclick="exportPoolCSV()">
         <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M2 10v2h10v-2M7 2v8M4 7l3 3 3-3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
         Export
       </button>
-      <button class="btn btn-ghost" onclick="toggleToken()" title="GitHub token">
-        <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><rect x="2" y="7" width="12" height="7" rx="2" stroke="currentColor" stroke-width="1.5"/><path d="M5 7V5a3 3 0 016 0v2" stroke="currentColor" stroke-width="1.5"/></svg>
-      </button>
     </div>
   </div>
 
-  <!-- Token bar (collapsible) -->
-  <div class="token-collapse" id="token-collapse">
-    <div class="token-bar">
-      <label>GitHub Token</label>
-      <input class="token-input" type="password" id="gh-token" placeholder="ghp_xxxx... (boosts to 5,000 req/hr)" autocomplete="off">
-      <span class="token-status" id="token-status"></span>
-      <span class="token-help"><a href="https://github.com/settings/tokens/new?description=ScoutRadar&scopes=read:user" target="_blank">Generate token</a></span>
-    </div>
-  </div>
-
-  <!-- Scan UI (hidden when Pool or Inbox is active) -->
-  <div id="scan-ui">
-  <!-- KPI Strip -->
-  <div class="kpi-strip">
-    <div class="kpi-card">
-      <div class="kpi-label"><span class="kpi-dot" style="background:var(--primary)"></span> Total Founders</div>
-      <div class="kpi-value" id="total-count">0</div>
-    </div>
-    <div class="kpi-card">
-      <div class="kpi-label"><span class="kpi-dot" style="background:#2563EB"></span> GitHub</div>
-      <div class="kpi-value" id="gh-count">0</div>
-    </div>
-    <div class="kpi-card">
-      <div class="kpi-label"><span class="kpi-dot" style="background:var(--orange)"></span> HN + PH</div>
-      <div class="kpi-value" id="hnph-count">0</div>
-    </div>
-    <div class="kpi-card">
-      <div class="kpi-label"><span class="kpi-dot" style="background:var(--success)"></span> Imported</div>
-      <div class="kpi-value" id="manual-count">0</div>
-    </div>
-  </div>
-
-  <!-- Action Bar -->
-  <div class="action-bar">
-    <button class="btn btn-primary" id="scan-btn" onclick="startScan()">
-      <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><circle cx="6" cy="6" r="5" stroke="white" stroke-width="1.5"/><line x1="10" y1="10" x2="13" y2="13" stroke="white" stroke-width="1.5" stroke-linecap="round"/></svg>
-      <span id="scan-label">Scan All</span>
-    </button>
-    <button class="btn btn-success" onclick="openImport()">
-      <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M7 2v10M2 7h10" stroke="white" stroke-width="1.5" stroke-linecap="round"/></svg>
-      Import
-    </button>
-    <button class="btn btn-danger" onclick="clearHistory()">Clear History</button>
-  </div>
-
-  <!-- Progress -->
-  <div class="progress-wrap" id="progress-wrap"><div class="progress-inner"><div class="progress-text" id="progress-text">Ready</div><div class="progress-track"><div class="progress-fill" id="progress-fill" style="width:0%"></div></div></div></div>
-
-  <!-- Filter Bar -->
-  <div class="filter-bar" id="filter-bar">
-    <button class="filter-chip india-chip" id="chip-india" onclick="toggleChip('india',this)">India Only</button>
-    <button class="filter-chip" id="chip-founder" onclick="toggleChip('founder',this)">Founder</button>
-    <button class="filter-chip" id="chip-stealth" onclick="toggleChip('stealth',this)">Stealth</button>
-    <button class="filter-chip" id="chip-active" onclick="toggleChip('active',this)">Active Builder</button>
-    <div class="filter-divider"></div>
-    <select class="filter-select" id="filter-score" onchange="applyFilters()">
-      <option value="0">Any Score</option>
-      <option value="30">Score 30+</option>
-      <option value="50">Score 50+</option>
-      <option value="70">Score 70+</option>
-    </select>
-    <span class="filter-count" id="filter-count"></span>
-  </div>
-
-  </div><!-- /scan-ui -->
-
-  <!-- Results -->
-  <div class="results" id="results-area">
-    <div class="empty-state" id="empty-state"><h3>Ready to scout</h3><p>Scan GitHub + HN for AI agent founders, or import profiles manually from X / StealthCoSpy.</p></div>
-    <div class="card-grid" id="card-grid" style="display:none"></div>
-    <div class="table-wrap" id="table-wrap" style="display:none">
-      <table><thead><tr>
-        <th onclick="sortBy('source')">Source</th><th onclick="sortBy('name')">Name</th><th onclick="sortBy('company')">Company</th><th>Bio</th><th onclick="sortBy('location')">Location</th><th>Signals</th><th>Link</th>
-      </tr></thead><tbody id="table-body"></tbody></table>
-    </div>
-  </div>
-
-  <!-- Pool View -->
-  <div id="pool-area" style="display:none;padding:0 24px 24px;">
-    <div style="display:flex;align-items:center;gap:12px;margin-bottom:20px;flex-wrap:wrap;">
-      <div>
-        <h2 style="font-size:17px;font-weight:700;color:var(--text);margin:0;">Pool <span id="pool-total" style="font-size:13px;font-weight:500;color:var(--text2);"></span></h2>
-        <p style="font-size:12px;color:var(--text3);margin:2px 0 0;">Profiles discovered by the daily scan. Filter to find who matters.</p>
-      </div>
+  <!-- Pool / Source View (default) -->
+  <div id="pool-area" style="padding:0 24px 24px;">
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:16px;flex-wrap:wrap;">
+      <span id="pool-total" style="font-size:13px;color:var(--text3);"></span>
       <div style="display:flex;gap:8px;align-items:center;margin-left:auto;">
         <button class="btn btn-secondary" onclick="loadPool()">
           <svg width="13" height="13" viewBox="0 0 14 14" fill="none"><path d="M1 7A6 6 0 1 0 7 1" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><path d="M1 1v6h6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
@@ -654,9 +558,7 @@ function loadConfig() {
     if(c.ghMaxStars) document.getElementById('cfg-gh-max-stars').value=c.ghMaxStars;
     document.getElementById('cfg-gh-active-only').checked = c.ghActiveOnly ?? true;
   }} catch(e){}
-  try { const t=localStorage.getItem('scout_gh_token'); if(t){document.getElementById('gh-token').value=t; updateTokenStatus();}} catch(e){}
   try { const s=localStorage.getItem('scout_seen'); if(s) seenProfiles=JSON.parse(s); } catch(e){}
-  try { const r=localStorage.getItem('scout_results'); if(r){savedResults=JSON.parse(r);allResults=[...savedResults];applyFilters();updateCounts();if(savedResults.length)document.getElementById('empty-state').style.display='none';}} catch(e){}
 }
 
 function setCfgTab(tab, btn) {
@@ -682,13 +584,12 @@ function getConfig() { return {
   strongBg: document.getElementById('cfg-strong-bg').value.trim()
 }; }
 
-function saveConfig() { localStorage.setItem('scout_config',JSON.stringify(getConfig())); const t=document.getElementById('gh-token').value.trim(); if(t)localStorage.setItem('scout_gh_token',t);else localStorage.removeItem('scout_gh_token'); showToast('Filters saved'); }
+function saveConfig() { localStorage.setItem('scout_config',JSON.stringify(getConfig())); showToast('Filters saved'); }
 function resetConfig() { document.getElementById('cfg-location').value=DEFAULT_CONFIG.location; document.getElementById('cfg-exclude').value=DEFAULT_CONFIG.exclude; document.getElementById('cfg-top-n').value=DEFAULT_CONFIG.topN; document.getElementById('cfg-strong-bg').value=DEFAULT_CONFIG.strongBg; document.getElementById('cfg-hn-window').value='6'; document.getElementById('cfg-ph-window').value='30'; document.getElementById('cfg-gh-tags').value='founder, co-founder, cto, ceo, bootstrapped, stealth, launching, indie hacker'; document.getElementById('cfg-gh-min-stars').value='3'; document.getElementById('cfg-gh-max-stars').value='500'; document.getElementById('cfg-gh-active-only').checked=true; localStorage.removeItem('scout_config'); showToast('Reset'); }
 
 // ===================== TOKEN =====================
-document.getElementById('gh-token').addEventListener('input',()=>{ updateTokenStatus(); const t=document.getElementById('gh-token').value.trim(); if(t)localStorage.setItem('scout_gh_token',t);else localStorage.removeItem('scout_gh_token'); });
-function updateTokenStatus(){ const t=document.getElementById('gh-token').value.trim(),el=document.getElementById('token-status'); if(t&&(t.startsWith('ghp_')||t.startsWith('github_pat_'))){el.textContent='5,000 req/hr';el.className='token-status ok';}else if(t){el.textContent='Unrecognized format';el.className='token-status limited';}else{el.textContent='60 req/hr';el.className='token-status limited';} }
-function getGHHeaders(){ const h={'Accept':'application/vnd.github.v3+json'},t=document.getElementById('gh-token').value.trim(); if(t)h['Authorization']=`Bearer ${t}`; return h; }
+function updateTokenStatus(){}
+function getGHHeaders(){ const h={'Accept':'application/vnd.github.v3+json'},t=localStorage.getItem('scout_gh_token')||''; if(t)h['Authorization']=`Bearer ${t}`; return h; }
 
 function toggleToken() { document.getElementById('token-collapse').classList.toggle('show'); }
 
@@ -1597,12 +1498,11 @@ let inboxRecords = [];
 let inboxSelected = new Set();
 
 function openInbox(btn) {
-  document.querySelectorAll('#sidebar-nav a').forEach(a=>a.classList.remove('active'));
+  document.querySelectorAll('.sidebar-nav a').forEach(a => a.classList.remove('active'));
   if (btn) btn.classList.add('active');
-  showScanUI(false);
-  document.getElementById('results-area').style.display='none';
-  document.getElementById('pool-area').style.display='none';
-  document.getElementById('inbox-area').style.display='';
+  document.getElementById('pool-area').style.display = 'none';
+  document.getElementById('inbox-area').style.display = '';
+  document.getElementById('topbar-title').textContent = 'X Profiles';
   loadInbox();
 }
 
@@ -1664,11 +1564,26 @@ async function pushSelectedPool() {
 function openPool(el) {
   document.querySelectorAll('.sidebar-nav a').forEach(a => a.classList.remove('active'));
   if (el) el.classList.add('active');
-  showScanUI(false);
-  document.getElementById('results-area').style.display = 'none';
   document.getElementById('inbox-area').style.display = 'none';
   document.getElementById('pool-area').style.display = '';
-  loadPool();
+  document.getElementById('topbar-title').textContent = 'Pool';
+  // Clear source filter so all sources show
+  document.getElementById('pool-source').value = '';
+  poolSelected.clear();
+  updatePoolPushBtn();
+  if (!poolRecords.length) loadPool(); else renderPool();
+}
+
+function openSource(src, el) {
+  document.querySelectorAll('.sidebar-nav a').forEach(a => a.classList.remove('active'));
+  if (el) el.classList.add('active');
+  document.getElementById('inbox-area').style.display = 'none';
+  document.getElementById('pool-area').style.display = '';
+  document.getElementById('topbar-title').textContent = src;
+  document.getElementById('pool-source').value = src;
+  poolSelected.clear();
+  updatePoolPushBtn();
+  if (!poolRecords.length) loadPool(); else renderPool();
 }
 
 function poolMatchScore(r) {
@@ -1696,8 +1611,17 @@ async function loadPool() {
     const data = await resp.json();
     poolRecords = (data.records || []).map(r => ({ ...r, matchScore: poolMatchScore(r) }));
     poolRecords.sort((a, b) => b.matchScore - a.matchScore || b.score - a.score);
-    document.getElementById('pool-total').textContent = `(${poolRecords.length})`;
-    document.getElementById('nav-pool-count').textContent = poolRecords.length || '0';
+
+    // Update nav counts
+    const ghCount = poolRecords.filter(r => r.source === 'GitHub').length;
+    const hnCount = poolRecords.filter(r => r.source === 'Hacker News').length;
+    const phCount = poolRecords.filter(r => r.source === 'Product Hunt').length;
+    document.getElementById('pool-total').textContent = `${poolRecords.length} profiles`;
+    document.getElementById('nav-pool-count').textContent = poolRecords.length;
+    document.getElementById('nav-gh-count').textContent = ghCount;
+    document.getElementById('nav-hn-count').textContent = hnCount;
+    document.getElementById('nav-ph-count').textContent = phCount;
+
     renderPool();
   } catch(e) {
     document.getElementById('pool-empty').style.display = 'block';
@@ -1959,15 +1883,46 @@ async function pushAllToAirtable() {
   }
 }
 
-// ===================== INIT =====================
-document.getElementById('card-grid').addEventListener('click', e => {
-  const btn = e.target.closest('.btn-save-airtable');
-  if (btn && !btn.disabled && !btn.classList.contains('saved')) {
-    pushOneToAirtable(btn.dataset.username, btn);
-  }
-});
+function exportPoolCSV() {
+  // Export the currently visible filtered pool records
+  const q      = (document.getElementById('pool-search').value || '').toLowerCase();
+  const geo    = document.getElementById('pool-geo').value;
+  const act    = document.getElementById('pool-activity').value;
+  const fnd    = document.getElementById('pool-founder').value;
+  const src    = document.getElementById('pool-source').value;
+  const minMatch = parseInt(document.getElementById('pool-match').value) || 0;
+  const rows = poolRecords.filter(r => {
+    const sigs = (r.signals || '').toLowerCase();
+    if (geo && !sigs.includes(geo)) return false;
+    if (act && !sigs.includes(act)) return false;
+    if (fnd && !sigs.includes(fnd)) return false;
+    if (src && (r.source || '').toLowerCase() !== src.toLowerCase()) return false;
+    if (minMatch && r.matchScore < minMatch) return false;
+    if (q) { const hay = [r.name, r.bio, r.company, r.signals, r.location].join(' ').toLowerCase(); if (!hay.includes(q)) return false; }
+    return true;
+  });
+  if (!rows.length) return showToast('Nothing to export');
+  const h = ['Name','Company','Location','Source','Signals','Score','URL','Date Found'];
+  const csv = [h.join(','), ...rows.map(r => [
+    `"${(r.name||'').replace(/"/g,'""')}"`,
+    `"${(r.company||'').replace(/"/g,'""')}"`,
+    `"${(r.location||'').replace(/"/g,'""')}"`,
+    r.source||'',
+    `"${(r.signals||'').replace(/"/g,'""')}"`,
+    r.score||0,
+    r.url||'',
+    r.dateFound||'',
+  ].join(','))].join('\n');
+  const blob = new Blob([csv], { type: 'text/csv' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `scout_pool_${new Date().toISOString().split('T')[0]}.csv`;
+  a.click();
+}
 
-loadConfig(); updateTokenStatus();
+// ===================== INIT =====================
+loadConfig();
+loadPool();
 </script>
 </body>
 </html>
