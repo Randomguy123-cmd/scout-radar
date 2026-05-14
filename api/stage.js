@@ -59,7 +59,7 @@ module.exports = async (req, res) => {
         [F.name]:       p.name || p.username || '',
         [F.company]:    p.company || '',
         [F.location]:   p.location || '',
-        [F.linkedinUrl]:p.url || `https://x.com/${p.username || ''}`,
+        [F.linkedinUrl]:p.username ? `https://x.com/${p.username}` : (p.url || ''),
         [F.source]:     'X / Twitter',
         [F.signals]:    'India-linked, AI',
         [F.score]:      scoreProfile(p.bio || '', p.location || ''),
