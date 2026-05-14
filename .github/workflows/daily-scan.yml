@@ -1,0 +1,25 @@
+name: Daily Founder Scan
+
+on:
+  schedule:
+    # 2:30am UTC = 8:00am IST every day
+    - cron: '30 2 * * *'
+  workflow_dispatch:
+    # Run manually anytime from the Actions tab
+
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Run scan
+        env:
+          GITHUB_TOKEN: ${{ secrets.GH_SCAN_TOKEN }}
+          AIRTABLE_TOKEN: ${{ secrets.AIRTABLE_TOKEN }}
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+        run: node scripts/run-scan.js
