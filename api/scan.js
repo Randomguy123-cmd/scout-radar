@@ -4,20 +4,19 @@
 const AIRTABLE_BASE  = 'appoVW6cJXYYhHKnU';
 const AIRTABLE_TABLE = 'tblw5OF9akHaMtH38';
 
-// Airtable field IDs
+// Airtable field names (must match column names exactly in your base)
 const F = {
-  name:       'fldyTMMYSU53HVtyo',
-  title:      'fldCNMzuyzYRsIJ1j',
-  company:    'fldSwBGTmB83AqWkz',
-  location:   'flduL5j1GQWVqTDvT',
-  linkedinUrl:'fld3xYqcUzx9OOcLS',
-  source:     'fld6E7ayV5lCQ0AgL',
-  signals:    'fldQznFe4G3uKoWIW',
-  score:      'fldfM2WorISthIbPR',
-  bio:        'fldD3oJ4jm5bMBqNV',
-  companyUrl: 'fldkLcnGbjLl7ZKVj',
-  status:     'fldfSW7ViqWivnBzS',
-  dateFound:  'fldEqPdVh0EkRZy1U',
+  name:       'Name',
+  company:    'Company',
+  location:   'Location',
+  linkedinUrl:'URL',
+  source:     'Source',
+  signals:    'Signals',
+  score:      'Score',
+  bio:        'Bio',
+  companyUrl: 'Company URL',
+  status:     'Status',
+  dateFound:  'Date Found',
 };
 
 // ── India location signals ────────────────────────────────────────────────────
