@@ -390,25 +390,51 @@ async function searchPH(phClientId, phClientSecret) {
   return results;
 }
 
-async function searchReddit() {
+async function getRedditToken(clientId, clientSecret) {
+  const creds = Buffer.from(`${clientId}:${clientSecret}`).toString('base64');
+  const resp = await fetch('https://www.reddit.com/api/v1/access_token', {
+    method: 'POST',
+    headers: {
+      Authorization: `Basic ${creds}`,
+      'User-Agent': 'ScoutRadar/1.0 by ScoutRadarBot',
+      'Content-Type': 'application/x-www-form-urlencoded',
+    },
+    body: 'grant_type=client_credentials',
+  });
+  if (!resp.ok) throw new Error(`Reddit token failed: ${resp.status}`);
+  const data = await resp.json();
+  return data.access_token;
+}
+
+async function searchReddit(clientId, clientSecret) {
   const results = [];
   const seen = new Set();
-  // Fetch new + hot for India-focused subs; SideProject for broader builder signal
   const feeds = [
-    { sub: 'IndiaTech',       sort: 'new',  india: true  },
-    { sub: 'IndiaTech',       sort: 'hot',  india: true  },
-    { sub: 'IndianStartups',  sort: 'new',  india: true  },
-    { sub: 'IndianStartups',  sort: 'hot',  india: true  },
-    { sub: 'SideProject',     sort: 'new',  india: false },
+    { sub: 'IndiaTech',      sort: 'new', india: true  },
+    { sub: 'IndiaTech',      sort: 'hot', india: true  },
+    { sub: 'IndianStartups', sort: 'new', india: true  },
+    { sub: 'IndianStartups', sort: 'hot', india: true  },
+    { sub: 'SideProject',    sort: 'new', india: false },
   ];
   const builderRe = /\b(built|launched|building|founder|startup|i made|side project|saas|product|shipping|stealth)\b/;
 
+  let token;
+  try {
+    token = await getRedditToken(clientId, clientSecret);
+  } catch (e) {
+    console.error('[Reddit] Auth failed:', e.message);
+    return results;
+  }
+
+  const headers = {
+    Authorization: `Bearer ${token}`,
+    'User-Agent': 'ScoutRadar/1.0 by ScoutRadarBot',
+  };
+
   for (const { sub, sort, india } of feeds) {
     try {
-      const url = `https://www.reddit.com/r/${sub}/${sort}.json?limit=100&raw_json=1`;
-      const resp = await fetch(url, {
-        headers: { 'User-Agent': 'Mozilla/5.0 (compatible; ScoutRadar/1.0; +https://github.com/scout-radar)' },
-      });
+      const url = `https://oauth.reddit.com/r/${sub}/${sort}.json?limit=100&raw_json=1`;
+      const resp = await fetch(url, { headers });
       if (!resp.ok) { console.error(`[Reddit] ${sub}/${sort} → ${resp.status}`); continue; }
       const data = await resp.json();
       for (const post of (data.data?.children || [])) {
@@ -432,7 +458,7 @@ async function searchReddit() {
         });
       }
     } catch (e) { console.error('[Reddit] Error:', sub, sort, e.message); }
-    await sleep(1200); // Reddit rate limit
+    await sleep(1000);
   }
   console.log(`[Reddit] Found ${results.length} potential founders`);
   return results;
@@ -541,10 +567,12 @@ module.exports = async (req, res) => {
     return res.status(401).json({ error: 'Unauthorized' });
   }
 
-  const ghToken    = process.env.GH_SCAN_TOKEN || process.env.GITHUB_TOKEN;
-  const atToken    = process.env.AIRTABLE_TOKEN;
-  const phClientId = process.env.PH_CLIENT_ID;
-  const phSecret   = process.env.PH_CLIENT_SECRET;
+  const ghToken       = process.env.GH_SCAN_TOKEN || process.env.GITHUB_TOKEN;
+  const atToken       = process.env.AIRTABLE_TOKEN;
+  const phClientId    = process.env.PH_CLIENT_ID;
+  const phSecret      = process.env.PH_CLIENT_SECRET;
+  const redditId      = process.env.REDDIT_CLIENT_ID;
+  const redditSecret  = process.env.REDDIT_CLIENT_SECRET;
   if (!atToken) return res.status(500).json({ error: 'AIRTABLE_TOKEN not set' });
 
   const startTime = Date.now();
@@ -558,7 +586,7 @@ module.exports = async (req, res) => {
       ghToken ? searchGitHub(ghToken) : (console.log('[scan] No GITHUB_TOKEN — skipping GitHub'), Promise.resolve([])),
       searchHN(),
       (phClientId && phSecret) ? searchPH(phClientId, phSecret) : (console.log('[scan] No PH credentials — skipping Product Hunt'), Promise.resolve([])),
-      searchReddit(),
+      (redditId && redditSecret) ? searchReddit(redditId, redditSecret) : (console.log('[scan] No Reddit credentials — skipping Reddit'), Promise.resolve([])),
       ghToken ? searchGitHubTrending(ghToken) : Promise.resolve([]),
     ]);
 
