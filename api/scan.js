@@ -471,7 +471,6 @@ async function pushToAirtable(founders, atToken) {
         [F.score]:      f.score || 0,
         [F.bio]:        f.bio || '',
         [F.companyUrl]: f.blog || '',
-        [F.status]:     'New',
         [F.dateFound]:  today,
       }
     }));
