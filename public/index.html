@@ -266,6 +266,16 @@
       <span>Product Hunt</span>
       <span class="nav-count" id="nav-ph-count">—</span>
     </a></li>
+    <li><a data-source="reddit" onclick="openSource('Reddit',this)">
+      <span class="nav-icon"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="9" r="5" stroke="currentColor" stroke-width="1.5"/><circle cx="11.5" cy="3.5" r="1" fill="currentColor"/><path d="M8 3.5c1.2 0 2.3.3 3 .8" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/><circle cx="6.2" cy="9" r=".8" fill="currentColor"/><circle cx="9.8" cy="9" r=".8" fill="currentColor"/><path d="M6 11c.5.7 1.2 1 2 1s1.5-.3 2-1" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg></span>
+      <span>Reddit</span>
+      <span class="nav-count" id="nav-reddit-count">—</span>
+    </a></li>
+    <li><a data-source="trending" onclick="openSource('GitHub Trending',this)">
+      <span class="nav-icon"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><polyline points="1,13 5,7 8,10 11,5 15,3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+      <span>Trending</span>
+      <span class="nav-count" id="nav-trending-count">—</span>
+    </a></li>
   </ul>
 
   <div class="sidebar-section-label">Pipeline</div>
@@ -1663,14 +1673,18 @@ async function loadPool() {
     poolRecords.sort((a, b) => b.matchScore - a.matchScore || b.score - a.score);
 
     // Update nav counts
-    const ghCount = poolRecords.filter(r => r.source === 'GitHub').length;
-    const hnCount = poolRecords.filter(r => r.source === 'Hacker News').length;
-    const phCount = poolRecords.filter(r => r.source === 'Product Hunt').length;
+    const ghCount      = poolRecords.filter(r => r.source === 'GitHub').length;
+    const hnCount      = poolRecords.filter(r => r.source === 'Hacker News').length;
+    const phCount      = poolRecords.filter(r => r.source === 'Product Hunt').length;
+    const redditCount  = poolRecords.filter(r => r.source === 'Reddit').length;
+    const trendingCount= poolRecords.filter(r => r.source === 'GitHub Trending').length;
     document.getElementById('pool-total').textContent = `${poolRecords.length} profiles`;
     document.getElementById('nav-pool-count').textContent = poolRecords.length;
     document.getElementById('nav-gh-count').textContent = ghCount;
     document.getElementById('nav-hn-count').textContent = hnCount;
     document.getElementById('nav-ph-count').textContent = phCount;
+    document.getElementById('nav-reddit-count').textContent = redditCount;
+    document.getElementById('nav-trending-count').textContent = trendingCount;
 
     renderPool();
   } catch(e) {

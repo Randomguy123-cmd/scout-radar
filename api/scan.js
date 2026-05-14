@@ -315,9 +315,7 @@ async function searchPH(phClientId, phClientSecret) {
 
           const u = post.user;
           if (!u || seen.has(u.username)) continue;
-          const combined = [u.headline || '', u.websiteUrl || '', post.tagline || '', post.name || ''].join(' ').toLowerCase();
-          if (!hasIndiaSignal('', combined, '')) continue;
-
+          // PH has no location — collect all, let match scoring sort relevance
           seen.add(u.username);
           const s = score(post.tagline, u.headline || '', '', 'ph', post.votesCount || 0, false);
           results.push({
@@ -437,7 +435,7 @@ async function searchGitHubTrending(ghToken) {
             location: u.location || '',
             url: u.html_url,
             blog: u.blog || '',
-            source: 'github',
+            source: 'github-trending',
             score: s,
           });
           await sleep(500);
@@ -450,7 +448,7 @@ async function searchGitHubTrending(ghToken) {
 }
 
 async function pushToAirtable(founders, atToken) {
-  const sourceMap = { github: 'GitHub', hn: 'Hacker News', ph: 'Product Hunt', reddit: 'Reddit' };
+  const sourceMap = { github: 'GitHub', hn: 'Hacker News', ph: 'Product Hunt', reddit: 'Reddit', 'github-trending': 'GitHub Trending' };
   let created = 0;
   const today = new Date().toISOString().split('T')[0];
 
