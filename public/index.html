@@ -245,7 +245,7 @@
     <h1><span>Scout</span> Radar</h1>
   </div>
 
-  <div class="sidebar-section-label">Sources</div>
+  <div class="sidebar-section-label">Live Scan</div>
   <ul class="sidebar-nav" id="sidebar-nav">
     <li><a class="active" data-source="all" onclick="setSource('all',this)">
       <span class="nav-icon"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><rect x="1" y="1" width="6" height="6" rx="1.5" stroke="currentColor" stroke-width="1.5"/><rect x="9" y="1" width="6" height="6" rx="1.5" stroke="currentColor" stroke-width="1.5"/><rect x="1" y="9" width="6" height="6" rx="1.5" stroke="currentColor" stroke-width="1.5"/><rect x="9" y="9" width="6" height="6" rx="1.5" stroke="currentColor" stroke-width="1.5"/></svg></span>
@@ -267,8 +267,12 @@
       <span>Product Hunt</span>
       <span class="nav-count" id="nav-ph-count">0</span>
     </a></li>
+  </ul>
+
+  <div class="sidebar-section-label">Database</div>
+  <ul class="sidebar-nav" id="sidebar-nav-db">
     <li><a data-source="pool" onclick="openPool(this)">
-      <span class="nav-icon"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="6.5" stroke="currentColor" stroke-width="1.5"/><path d="M5 8h6M8 5v6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></span>
+      <span class="nav-icon"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="5" r="3.5" stroke="currentColor" stroke-width="1.5"/><path d="M2 13c0-2.5 2.686-4.5 6-4.5s6 2 6 4.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></span>
       <span>Pool</span>
       <span class="nav-count" id="nav-pool-count">—</span>
     </a></li>
@@ -423,10 +427,6 @@
       <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M7 2v10M2 7h10" stroke="white" stroke-width="1.5" stroke-linecap="round"/></svg>
       Import
     </button>
-    <button class="btn btn-secondary" onclick="pushAllToAirtable()" id="push-all-btn" style="background:#7C3AED;color:white;border-color:#7C3AED;">
-      <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M7 2v7M4 6l3 3 3-3" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M2 11h10" stroke="white" stroke-width="1.5" stroke-linecap="round"/></svg>
-      Push All to Airtable
-    </button>
     <button class="btn btn-danger" onclick="clearHistory()">Clear History</button>
   </div>
 
@@ -469,10 +469,16 @@
         <h2 style="font-size:17px;font-weight:700;color:var(--text);margin:0;">Pool <span id="pool-total" style="font-size:13px;font-weight:500;color:var(--text2);"></span></h2>
         <p style="font-size:12px;color:var(--text3);margin:2px 0 0;">Profiles discovered by the daily scan. Filter to find who matters.</p>
       </div>
-      <button class="btn btn-secondary" onclick="loadPool()" style="margin-left:auto;">
-        <svg width="13" height="13" viewBox="0 0 14 14" fill="none"><path d="M1 7A6 6 0 1 0 7 1" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><path d="M1 1v6h6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
-        Refresh
-      </button>
+      <div style="display:flex;gap:8px;align-items:center;margin-left:auto;">
+        <button class="btn btn-secondary" onclick="loadPool()">
+          <svg width="13" height="13" viewBox="0 0 14 14" fill="none"><path d="M1 7A6 6 0 1 0 7 1" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><path d="M1 1v6h6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          Refresh
+        </button>
+        <button class="btn" id="pool-push-btn" onclick="pushSelectedPool()" disabled style="background:#7C3AED;color:white;border:none;opacity:0.4;cursor:not-allowed;">
+          <svg width="13" height="13" viewBox="0 0 14 14" fill="none"><path d="M7 2v7M4 6l3 3 3-3" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M2 11h10" stroke="white" stroke-width="1.5" stroke-linecap="round"/></svg>
+          Push to Shortlist
+        </button>
+      </div>
     </div>
 
     <!-- Filter bar -->
@@ -485,17 +491,17 @@
       <!-- Geography -->
       <select id="pool-geo" onchange="renderPool()" style="padding:7px 10px;border:1px solid var(--border);border-radius:7px;font-size:13px;background:var(--bg);color:var(--text);cursor:pointer;">
         <option value="">All Geographies</option>
-        <option value="india-based">India Based</option>
-        <option value="india-origin-edu">India Origin · Edu</option>
-        <option value="india-origin-work">India Origin · Work</option>
-        <option value="india-diaspora">Diaspora</option>
+        <option value="india based">India Based</option>
+        <option value="india origin · edu">India Origin · Edu</option>
+        <option value="india origin · work">India Origin · Work</option>
+        <option value="diaspora">Diaspora</option>
       </select>
       <!-- Activity -->
       <select id="pool-activity" onchange="renderPool()" style="padding:7px 10px;border:1px solid var(--border);border-radius:7px;font-size:13px;background:var(--bg);color:var(--text);cursor:pointer;">
         <option value="">All Activity</option>
-        <option value="active-14d">Active · Last 14d</option>
-        <option value="active-30d">Active · Last 30d</option>
-        <option value="has-product-url">Has Product URL</option>
+        <option value="active · last 14d">Active · Last 14d</option>
+        <option value="active · last 30d">Active · Last 30d</option>
+        <option value="has product url">Has Product URL</option>
       </select>
       <!-- Founder type -->
       <select id="pool-founder" onchange="renderPool()" style="padding:7px 10px;border:1px solid var(--border);border-radius:7px;font-size:13px;background:var(--bg);color:var(--text);cursor:pointer;">
@@ -1577,7 +1583,7 @@ function setSource(src, btn){
   document.getElementById('results-area').style.display='';
   document.getElementById('inbox-area').style.display='none';
   document.getElementById('pool-area').style.display='none';
-  document.querySelectorAll('#sidebar-nav a').forEach(a=>a.classList.toggle('active',a.dataset.source===src));
+  document.querySelectorAll('.sidebar-nav a').forEach(a=>a.classList.toggle('active',a.dataset.source===src));
   const labels = {all:'Scan All', github:'Scan GitHub', hn:'Scan HN', ph:'Scan Product Hunt', manual:'Import'};
   const scanLabelEl = document.getElementById('scan-label');
   if (scanLabelEl) scanLabelEl.textContent = labels[src] || 'Scan All';
@@ -1602,9 +1608,61 @@ function openInbox(btn) {
 
 // ===================== POOL VIEW =====================
 let poolRecords = [];
+let poolSelected = new Set();
+
+function togglePoolSelect(airtableId, cardEl) {
+  if (poolSelected.has(airtableId)) {
+    poolSelected.delete(airtableId);
+    cardEl.style.outline = 'none';
+  } else {
+    poolSelected.add(airtableId);
+    cardEl.style.outline = '2px solid var(--primary)';
+    cardEl.style.outlineOffset = '2px';
+  }
+  updatePoolPushBtn();
+}
+
+function updatePoolPushBtn() {
+  const btn = document.getElementById('pool-push-btn');
+  const n = poolSelected.size;
+  btn.disabled = n === 0;
+  btn.style.opacity = n === 0 ? '0.4' : '1';
+  btn.style.cursor = n === 0 ? 'not-allowed' : 'pointer';
+  btn.querySelector('svg').nextSibling.textContent = n > 0 ? ` Push ${n} to Shortlist` : ' Push to Shortlist';
+}
+
+async function pushSelectedPool() {
+  if (!poolSelected.size) return;
+  const btn = document.getElementById('pool-push-btn');
+  btn.disabled = true;
+  btn.style.opacity = '0.6';
+  const origText = btn.querySelector('svg').nextSibling.textContent;
+  btn.querySelector('svg').nextSibling.textContent = ' Pushing…';
+
+  const toSend = poolRecords.filter(r => poolSelected.has(r.airtableId));
+  try {
+    const resp = await fetch('/api/shortlist', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ records: toSend }),
+    });
+    const data = await resp.json();
+    if (data.success) {
+      showToast(`${data.created} profile${data.created !== 1 ? 's' : ''} added to Shortlist`);
+      poolSelected.clear();
+      renderPool();
+    } else {
+      showToast('Error: ' + (data.error || 'Failed'));
+    }
+  } catch(e) {
+    showToast('Network error');
+  }
+  updatePoolPushBtn();
+  btn.style.opacity = poolSelected.size === 0 ? '0.4' : '1';
+}
 
 function openPool(el) {
-  document.querySelectorAll('#sidebar-nav a').forEach(a => a.classList.remove('active'));
+  document.querySelectorAll('.sidebar-nav a').forEach(a => a.classList.remove('active'));
   if (el) el.classList.add('active');
   showScanUI(false);
   document.getElementById('results-area').style.display = 'none';
@@ -1617,15 +1675,17 @@ function poolMatchScore(r) {
   const sigs = (r.signals || '').toLowerCase();
   let score = 0;
   // Dimension 1: Geography
-  if (sigs.includes('india-based') || sigs.includes('india-origin') || sigs.includes('india-diaspora')) score++;
+  if (sigs.includes('india based') || sigs.includes('india origin') || sigs.includes('diaspora')) score++;
   // Dimension 2: Activity
-  if (sigs.includes('active-14d') || sigs.includes('active-30d') || sigs.includes('has-product-url')) score++;
+  if (sigs.includes('active · last 14d') || sigs.includes('active · last 30d') || sigs.includes('has product url')) score++;
   // Dimension 3: Founder Type
   if (sigs.includes('founder') || sigs.includes('ceo') || sigs.includes('cto') || sigs.includes('building')) score++;
   return score;
 }
 
 async function loadPool() {
+  poolSelected.clear();
+  updatePoolPushBtn();
   document.getElementById('pool-loading').style.display = 'block';
   document.getElementById('pool-empty').style.display = 'none';
   document.getElementById('pool-grid').innerHTML = '';
@@ -1687,12 +1747,12 @@ function renderPool() {
     const profileUrl = r.url || '#';
     const name = r.name || 'Unknown';
     const bio  = (r.bio || '').substring(0, 200);
-    return `<div class="card" style="position:relative;">
-      <div style="position:absolute;top:14px;right:14px;display:flex;align-items:center;gap:5px;">
-        <span style="width:9px;height:9px;border-radius:50%;background:${mc};display:inline-block;flex-shrink:0;"></span>
-        <span style="font-size:11px;font-weight:600;color:${mc};">${ml}</span>
+    const sel  = poolSelected.has(r.airtableId);
+    return `<div class="card" data-id="${r.airtableId}" style="position:relative;cursor:pointer;${sel ? 'outline:2px solid var(--primary);outline-offset:2px;' : ''}" onclick="togglePoolSelect('${r.airtableId}',this)">
+      <div style="position:absolute;top:14px;right:14px;display:flex;align-items:center;gap:6px;">
+        ${sel ? `<span style="font-size:11px;font-weight:700;color:var(--primary);background:var(--blue-light);padding:2px 7px;border-radius:10px;">&#10003; Selected</span>` : `<span style="display:flex;align-items:center;gap:4px;"><span style="width:9px;height:9px;border-radius:50%;background:${mc};display:inline-block;flex-shrink:0;"></span><span style="font-size:11px;font-weight:600;color:${mc};">${ml}</span></span>`}
       </div>
-      <div class="card-top" style="padding-right:90px;">
+      <div class="card-top" style="padding-right:110px;">
         <div class="card-identity">
           <h3>${esc(name)}</h3>
           ${r.company ? `<div class="card-company">${esc(r.company)}</div>` : ''}
@@ -1702,7 +1762,7 @@ function renderPool() {
       <div class="signal-tags">${tags.map(t => `<span class="signal-tag">${esc(t)}</span>`).join('')}</div>
       <div class="card-bottom">
         <span class="card-location">${r.location ? `<svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M6 1C4.067 1 2.5 2.567 2.5 4.5C2.5 7.25 6 11 6 11s3.5-3.75 3.5-6.5C9.5 2.567 7.933 1 6 1z" stroke="currentColor" stroke-width="1.2"/><circle cx="6" cy="4.5" r="1.2" stroke="currentColor" stroke-width="1.2"/></svg> ${esc(r.location)}` : ''}</span>
-        <div style="display:flex;gap:8px;align-items:center;">
+        <div style="display:flex;gap:8px;align-items:center;" onclick="event.stopPropagation()">
           ${r.source ? `<span style="font-size:11px;color:var(--text3);">${esc(r.source)}</span>` : ''}
           ${profileUrl !== '#' ? `<a class="card-link" href="${esc(profileUrl)}" target="_blank">View</a>` : ''}
         </div>
