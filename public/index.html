@@ -278,6 +278,15 @@
     </a></li>
   </ul>
 
+  <div class="sidebar-section-label">Highlights</div>
+  <ul class="sidebar-nav">
+    <li><a data-source="masterboard" onclick="openMasterboard(this)">
+      <span class="nav-icon"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M8 1.5l1.8 3.6 4 .58-2.9 2.82.68 3.98L8 10.4l-3.58 1.98.68-3.98L2.2 5.68l4-.58L8 1.5z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg></span>
+      <span>Masterboard</span>
+      <span class="nav-count" id="nav-master-count">—</span>
+    </a></li>
+  </ul>
+
   <div class="sidebar-section-label">Pipeline</div>
   <ul class="sidebar-nav" id="sidebar-nav-db">
     <li><a data-source="inbox" onclick="openInbox(this)">
@@ -474,6 +483,22 @@
     </div>
     <div id="pool-count-bar" style="font-size:12px;color:var(--text3);margin-bottom:10px;"></div>
     <div class="card-grid" id="pool-grid"></div>
+  </div>
+
+  <!-- Masterboard View -->
+  <div id="masterboard-area" style="display:none;padding:0 24px 24px;">
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:16px;flex-wrap:wrap;">
+      <span id="masterboard-total" style="font-size:13px;color:var(--text3);"></span>
+      <button class="btn" onclick="pushSelectedMasterboard()" id="masterboard-push-btn" disabled style="margin-left:auto;background:#7C3AED;color:white;border:none;opacity:0.4;cursor:not-allowed;">
+        <svg width="13" height="13" viewBox="0 0 14 14" fill="none"><path d="M7 2v7M4 6l3 3 3-3" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M2 11h10" stroke="white" stroke-width="1.5" stroke-linecap="round"/></svg>
+        Push to Shortlist
+      </button>
+    </div>
+    <div id="masterboard-empty" style="display:none;text-align:center;padding:60px 0;color:var(--text3);">
+      <svg width="36" height="36" viewBox="0 0 16 16" fill="none" style="margin-bottom:12px;opacity:0.3"><path d="M8 1.5l1.8 3.6 4 .58-2.9 2.82.68 3.98L8 10.4l-3.58 1.98.68-3.98L2.2 5.68l4-.58L8 1.5z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg>
+      <p style="font-size:14px;margin:0;">No highlights yet — star profiles from the Pool</p>
+    </div>
+    <div id="masterboard-grid" class="card-grid"></div>
   </div>
 
   <!-- Inbox View -->
@@ -1524,6 +1549,116 @@ function setSource(src, btn){
 }
 
 // ── Inbox (staged X profiles) ──────────────────────────────
+// ===================== MASTERBOARD =====================
+let starredIds = new Set(JSON.parse(localStorage.getItem('scout_starred') || '[]'));
+let masterSelected = new Set();
+
+function saveStarred() {
+  localStorage.setItem('scout_starred', JSON.stringify([...starredIds]));
+  document.getElementById('nav-master-count').textContent = starredIds.size || '—';
+}
+
+function toggleStar(id) {
+  if (starredIds.has(id)) {
+    starredIds.delete(id);
+  } else {
+    starredIds.add(id);
+  }
+  saveStarred();
+  // Update star button in place without full re-render
+  const btn = document.getElementById('star-' + id);
+  if (btn) {
+    const starred = starredIds.has(id);
+    btn.textContent = starred ? '★' : '☆';
+    btn.style.opacity = starred ? '1' : '0.3';
+    btn.title = starred ? 'Remove from Masterboard' : 'Add to Masterboard';
+  }
+  // Re-render masterboard if it's visible
+  if (document.getElementById('masterboard-area').style.display !== 'none') renderMasterboard();
+}
+
+function openMasterboard(el) {
+  document.querySelectorAll('.sidebar-nav a').forEach(a => a.classList.remove('active'));
+  if (el) el.classList.add('active');
+  document.getElementById('pool-area').style.display = 'none';
+  document.getElementById('inbox-area').style.display = 'none';
+  document.getElementById('masterboard-area').style.display = '';
+  document.getElementById('topbar-title').textContent = 'Masterboard';
+  if (!poolRecords.length) loadPool().then(renderMasterboard); else renderMasterboard();
+}
+
+function renderMasterboard() {
+  const starred = poolRecords.filter(r => starredIds.has(r.airtableId));
+  const total = document.getElementById('masterboard-total');
+  const empty = document.getElementById('masterboard-empty');
+  const grid  = document.getElementById('masterboard-grid');
+  total.textContent = `${starred.length} highlighted profile${starred.length !== 1 ? 's' : ''}`;
+  if (!starred.length) { empty.style.display = ''; grid.innerHTML = ''; return; }
+  empty.style.display = 'none';
+  const HIDDEN_TAGS = new Set(['confirmed','unconfirmed','not-indian','india-linked','ai']);
+  grid.innerHTML = starred.map(r => {
+    const tags = (r.signals || '').split(',').map(s => s.trim()).filter(s => s && !HIDDEN_TAGS.has(s.toLowerCase())).slice(0, 5);
+    const bio  = (r.bio || '').substring(0, 200);
+    const sel  = masterSelected.has(r.airtableId);
+    return `<div class="card" data-id="${r.airtableId}" style="position:relative;cursor:pointer;${sel ? 'outline:2px solid var(--primary);outline-offset:2px;' : ''}" onclick="toggleMasterSelect('${r.airtableId}',this)">
+      <div style="position:absolute;top:12px;right:12px;display:flex;gap:6px;align-items:center;">
+        <button onclick="event.stopPropagation();toggleStar('${r.airtableId}')" style="background:none;border:none;cursor:pointer;padding:2px;font-size:15px;opacity:1;" title="Remove from Masterboard">★</button>
+        ${sel ? `<span style="font-size:11px;font-weight:700;color:var(--primary);background:var(--blue-light);padding:2px 7px;border-radius:10px;">&#10003;</span>` : ''}
+      </div>
+      <div class="card-top" style="padding-right:80px;">
+        <div class="card-identity">
+          <h3>${esc(r.name || 'Unknown')}</h3>
+          ${r.company ? `<div class="card-company">${esc(r.company)}</div>` : ''}
+        </div>
+      </div>
+      ${bio ? `<div class="card-bio">${esc(bio)}</div>` : ''}
+      ${tags.length ? `<div class="signal-tags">${tags.map(t => `<span class="signal-tag">${esc(t)}</span>`).join('')}</div>` : ''}
+      <div class="card-bottom">
+        <span class="card-location">${r.location ? `<svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M6 1C4.067 1 2.5 2.567 2.5 4.5C2.5 7.25 6 11 6 11s3.5-3.75 3.5-6.5C9.5 2.567 7.933 1 6 1z" stroke="currentColor" stroke-width="1.2"/><circle cx="6" cy="4.5" r="1.2" stroke="currentColor" stroke-width="1.2"/></svg> ${esc(r.location)}` : ''}</span>
+        <div style="display:flex;gap:8px;align-items:center;" onclick="event.stopPropagation()">
+          ${r.source ? `<span style="font-size:11px;color:var(--text3);">${esc(r.source)}</span>` : ''}
+          ${r.url ? `<a class="card-link" href="${esc(r.url)}" target="_blank">View</a>` : ''}
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+  updateMasterboardPushBtn();
+}
+
+function toggleMasterSelect(id, el) {
+  if (masterSelected.has(id)) { masterSelected.delete(id); el.style.outline = ''; }
+  else { masterSelected.add(id); el.style.outline = '2px solid var(--primary)'; el.style.outlineOffset = '2px'; }
+  updateMasterboardPushBtn();
+  renderMasterboard();
+}
+
+function updateMasterboardPushBtn() {
+  const n = masterSelected.size;
+  const btn = document.getElementById('masterboard-push-btn');
+  btn.disabled = n === 0;
+  btn.style.opacity = n === 0 ? '0.4' : '1';
+  btn.style.cursor = n === 0 ? 'not-allowed' : 'pointer';
+  btn.querySelector('svg').nextSibling.textContent = n > 0 ? ` Push ${n} to Shortlist` : ' Push to Shortlist';
+}
+
+async function pushSelectedMasterboard() {
+  if (!masterSelected.size) return;
+  const btn = document.getElementById('masterboard-push-btn');
+  btn.disabled = true; btn.style.opacity = '0.6';
+  const toSend = poolRecords.filter(r => masterSelected.has(r.airtableId));
+  try {
+    const resp = await fetch('/api/shortlist', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ records: toSend }) });
+    const data = await resp.json();
+    if (data.success) { showToast(`${data.created} profile${data.created !== 1 ? 's' : ''} added to Shortlist`); masterSelected.clear(); renderMasterboard(); }
+    else showToast('Error: ' + (data.error || 'Failed'));
+  } catch(e) { showToast('Network error'); }
+  btn.disabled = false; btn.style.opacity = '1';
+}
+
+// Init nav count on load
+document.getElementById('nav-master-count').textContent = starredIds.size || '—';
+
+// ===================== INBOX =====================
 let inboxRecords = [];
 let inboxSelected = new Set();
 
@@ -1531,6 +1666,7 @@ function openInbox(btn) {
   document.querySelectorAll('.sidebar-nav a').forEach(a => a.classList.remove('active'));
   if (btn) btn.classList.add('active');
   document.getElementById('pool-area').style.display = 'none';
+  document.getElementById('masterboard-area').style.display = 'none';
   document.getElementById('inbox-area').style.display = '';
   document.getElementById('topbar-title').textContent = 'X Profiles';
   loadInbox();
@@ -1595,6 +1731,7 @@ function openPool(el) {
   document.querySelectorAll('.sidebar-nav a').forEach(a => a.classList.remove('active'));
   if (el) el.classList.add('active');
   document.getElementById('inbox-area').style.display = 'none';
+  document.getElementById('masterboard-area').style.display = 'none';
   document.getElementById('pool-area').style.display = '';
   document.getElementById('topbar-title').textContent = 'Pool';
   // Clear source filter so all sources show
@@ -1608,6 +1745,7 @@ function openSource(src, el) {
   document.querySelectorAll('.sidebar-nav a').forEach(a => a.classList.remove('active'));
   if (el) el.classList.add('active');
   document.getElementById('inbox-area').style.display = 'none';
+  document.getElementById('masterboard-area').style.display = 'none';
   document.getElementById('pool-area').style.display = '';
   document.getElementById('topbar-title').textContent = src;
   document.getElementById('pool-source').value = src;
@@ -1776,14 +1914,17 @@ function renderPool() {
   document.getElementById('pool-grid').innerHTML = filtered.map(r => {
     const mc   = matchColor[r.matchScore] || '#E5E7EB';
     const ml   = matchLabel[r.matchScore] || '';
-    const tags = (r.signals || '').split(',').map(s => s.trim()).filter(Boolean).slice(0, 6);
+    const HIDDEN_TAGS = new Set(['confirmed','unconfirmed','not-indian','india-linked','ai']);
+    const tags = (r.signals || '').split(',').map(s => s.trim()).filter(s => s && !HIDDEN_TAGS.has(s.toLowerCase())).slice(0, 5);
     const profileUrl = r.url || '#';
     const name = r.name || 'Unknown';
     const bio  = (r.bio || '').substring(0, 200);
     const sel  = poolSelected.has(r.airtableId);
+    const starred = starredIds.has(r.airtableId);
     return `<div class="card" data-id="${r.airtableId}" style="position:relative;cursor:pointer;${sel ? 'outline:2px solid var(--primary);outline-offset:2px;' : ''}" onclick="togglePoolSelect('${r.airtableId}',this)">
-      <div style="position:absolute;top:14px;right:14px;display:flex;align-items:center;gap:6px;">
-        ${sel ? `<span style="font-size:11px;font-weight:700;color:var(--primary);background:var(--blue-light);padding:2px 7px;border-radius:10px;">&#10003; Selected</span>` : `<span style="display:flex;align-items:center;gap:4px;"><span style="width:9px;height:9px;border-radius:50%;background:${mc};display:inline-block;flex-shrink:0;"></span><span style="font-size:11px;font-weight:600;color:${mc};">${ml}</span></span>`}
+      <div style="position:absolute;top:12px;right:12px;display:flex;align-items:center;gap:6px;">
+        <button onclick="event.stopPropagation();toggleStar('${r.airtableId}')" title="${starred ? 'Remove from Masterboard' : 'Add to Masterboard'}" style="background:none;border:none;cursor:pointer;padding:2px;line-height:1;font-size:15px;opacity:${starred ? '1' : '0.3'};transition:opacity 0.15s;" id="star-${r.airtableId}">${starred ? '★' : '☆'}</button>
+        ${sel ? `<span style="font-size:11px;font-weight:700;color:var(--primary);background:var(--blue-light);padding:2px 7px;border-radius:10px;">&#10003;</span>` : `<span style="display:flex;align-items:center;gap:4px;"><span style="width:9px;height:9px;border-radius:50%;background:${mc};display:inline-block;flex-shrink:0;"></span><span style="font-size:11px;font-weight:600;color:${mc};">${ml}</span></span>`}
       </div>
       <div class="card-top" style="padding-right:110px;">
         <div class="card-identity">
@@ -1792,7 +1933,7 @@ function renderPool() {
         </div>
       </div>
       ${bio ? `<div class="card-bio">${esc(bio)}</div>` : ''}
-      <div class="signal-tags">${tags.map(t => `<span class="signal-tag">${esc(t)}</span>`).join('')}</div>
+      ${tags.length ? `<div class="signal-tags">${tags.map(t => `<span class="signal-tag">${esc(t)}</span>`).join('')}</div>` : ''}
       <div class="card-bottom">
         <span class="card-location">${r.location ? `<svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M6 1C4.067 1 2.5 2.567 2.5 4.5C2.5 7.25 6 11 6 11s3.5-3.75 3.5-6.5C9.5 2.567 7.933 1 6 1z" stroke="currentColor" stroke-width="1.2"/><circle cx="6" cy="4.5" r="1.2" stroke="currentColor" stroke-width="1.2"/></svg> ${esc(r.location)}` : ''}</span>
         <div style="display:flex;gap:8px;align-items:center;" onclick="event.stopPropagation()">
