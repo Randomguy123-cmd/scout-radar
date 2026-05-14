@@ -315,14 +315,16 @@ async function searchGitHub(ghToken) {
             ]);
             const profile = profileResp?.ok ? await profileResp.json() : null;
             const repos   = reposResp?.ok   ? await reposResp.json()   : [];
-            return { profile, repos, fallbackBlog: o.blog };
+            return { profile, repos, fallbackBlog: o.blog, repoDesc: o.desc };
           })
         );
 
-        for (const { profile: p, repos, fallbackBlog } of enriched) {
+        for (const { profile: p, repos, fallbackBlog, repoDesc } of enriched) {
           if (!p) continue;
-          const signals = extractSignals(p, repos);
-          if (!isWorthStoring(p, signals)) continue;
+          // Augment profile with repo description so India signals from repo text count
+          const augmented = { ...p, bio: (p.bio || '') + ' ' + (repoDesc || '') };
+          const signals = extractSignals(augmented, repos);
+          if (!isWorthStoring(augmented, signals)) continue;
           const sc = score(p.bio, p.company || '', p.location || '', 'github', p.followers, signals);
           results.push({
             name: p.name || p.login, username: p.login,
@@ -346,8 +348,9 @@ async function searchGitHub(ghToken) {
         { headers }
       );
       if (resp.status === 429 || resp.status === 403) { await sleep(60000); continue; }
-      if (!resp.ok) continue;
+      if (!resp.ok) { console.log(`[scan] User query failed ${resp.status}: ${q}`); continue; }
       const data = await resp.json();
+      console.log(`[scan] User query "${q}" → ${(data.items||[]).length} results`);
 
       const batch = (data.items || []).filter(u => !seen.has(u.login));
       batch.forEach(u => seen.add(u.login));
