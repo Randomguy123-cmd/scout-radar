@@ -1,24 +1,23 @@
 // Daily scout scan — runs via Vercel Cron at 8am IST (2:30am UTC)
 // Searches GitHub + HN, filters India + Score≥50, deduplicates, pushes to Airtable.
 
-const AIRTABLE_BASE  = 'appwiWdsmAvz62CTK';
-const AIRTABLE_TABLE = 'tblW6mU9xd0BKTdLL';
+const AIRTABLE_BASE  = 'appoVW6cJXYYhHKnU';
+const AIRTABLE_TABLE = 'tblw5OF9akHaMtH38';
 const MIN_SCORE      = 50;
 
-// Airtable field IDs
+// Airtable field names
 const F = {
-  name:       'fldyTMMYSU53HVtyo',
-  title:      'fldCNMzuyzYRsIJ1j',
-  company:    'fldSwBGTmB83AqWkz',
-  location:   'flduL5j1GQWVqTDvT',
-  linkedinUrl:'fld3xYqcUzx9OOcLS',
-  source:     'fld6E7ayV5lCQ0AgL',
-  signals:    'fldQznFe4G3uKoWIW',
-  score:      'fldfM2WorISthIbPR',
-  bio:        'fldD3oJ4jm5bMBqNV',
-  companyUrl: 'fldkLcnGbjLl7ZKVj',
-  status:     'fldfSW7ViqWivnBzS',
-  dateFound:  'fldEqPdVh0EkRZy1U',
+  name:       'Name',
+  company:    'Company',
+  location:   'Location',
+  linkedinUrl:'URL',
+  source:     'Source',
+  signals:    'Signals',
+  score:      'Score',
+  bio:        'Bio',
+  companyUrl: 'Company URL',
+  status:     'Status',
+  dateFound:  'Date Found',
 };
 
 const INDIA_CITIES  = ['india','bangalore','bengaluru','mumbai','delhi','hyderabad','pune','chennai','kolkata','noida','gurgaon','gurugram','jaipur','ahmedabad','kochi','lucknow','ncr','indore','karnataka','maharashtra','telangana'];
