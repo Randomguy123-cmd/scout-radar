@@ -25,6 +25,49 @@ const INDIA_INST    = ['iit','iisc','bits pilani','nit ','isb ','iiit','iim '];
 const INDIA_COMPANIES = ['razorpay','flipkart','swiggy','zerodha','meesho','freshworks','zoho','phonepe','paytm','zomato','groww','lenskart','unacademy','byju','ola cab','cred ','nykaa','polygon','browserstack'];
 const EMPLOYEE_SIG  = ['software engineer at','sde at','developer at','engineer at','intern at','student at','looking for','open to work'];
 
+const INDIAN_NAMES = [
+  // Given names
+  'aarav','aditya','akash','akshay','aman','amit','amrita','ananya','anand','ankur',
+  'ankita','anshul','anuj','aparna','arjun','arnav','arun','ashish','ashutosh','ayush',
+  'bhavya','chirag','deepak','devansh','dhruv','divya','gaurav','hardik','harsh',
+  'himanshu','ishaan','isha','jatin','karan','kartik','kavya','kunal','lakshmi',
+  'manish','mansi','mehul','mohit','naman','neha','nikhil','niraj','nishant',
+  'pankaj','parth','pooja','pranav','prateek','priya','rahul','rajat','rajesh',
+  'rakesh','raman','ravi','ritesh','rohit','rohan','sachin','sahil','sanjay',
+  'sarthak','shivam','shreya','shubham','siddharth','soham','sourav','sumit',
+  'suresh','tarun','uday','varun','vikas','vivek','yash','aaditya','abhinav',
+  'abhishek','aishwarya','ajay','alok','amar','amol','aniket','anil','ankit',
+  'ankush','anurag','aryan','aseem','ashwin','atharv','chetan','darshan','devang',
+  'devesh','dhruvil','dinesh','girish','gopal','harish','harshal','hitesh','jay',
+  'jinal','jugal','kalpesh','kamlesh','kapil','kedar','kiran','kishor','krish',
+  'krunal','lalit','madhav','mahesh','mayank','milan','mitesh','mukesh','naresh',
+  'naveen','nilesh','nishit','nitin','omkar','parag','parimal','pavan','pavithra',
+  'poorvi','prakash','prasad','pratik','praveen','prem','priyal','purva','pushkar',
+  'raj','rajiv','rajeev','ramesh','ranjit','rashmi','ratan','raunak','rishabh',
+  'rishi','rutvik','sandip','saurabh','shailesh','shashank','sharad','siddhi',
+  'smit','sneha','srijan','subodh','sudip','sundar','swapnil','tanmay','tanvi',
+  'tejas','tushar','ujwal','utkarsh','vedant','vijay','vinay','vinit','vishal',
+  'vismay','vrushab','wasim','yuvraj','zeel',
+  // Surnames
+  'sharma','patel','singh','kumar','gupta','jain','shah','mehta','verma','mishra',
+  'agarwal','aggarwal','agrawal','bose','chatterjee','chopra','das','desai',
+  'gandhi','iyer','joshi','kapoor','kaur','krishnan','malhotra','menon','nair',
+  'pandey','rao','reddy','sinha','srivastava','trivedi','tyagi','yadav','banerjee',
+  'bhatt','chaudhary','doshi','dubey','garg','goyal','hegde','kaul','khanna',
+  'mahajan','murthy','naik','narayanan','pillai','prasad','rajan','rastogi',
+  'saxena','sethi','tiwari','venkatesan','walia','naidu','bhat','patil','kulkarni',
+  'shukla','tiwari','dixit','awasthi','bajaj','bhattacharya','biswas','chakraborty',
+  'chandra','chauhan','chowdhury','dutta','ghosh','goel','iyer','jha','karnik',
+  'khan','lal','mistry','mukherjee','nanda','oberoi','qureshi','rathore','shetty',
+  'subramaniam','tandon','vyas','wadhwa',
+];
+
+function hasIndianName(name) {
+  if (!name) return false;
+  const parts = name.toLowerCase().split(/\s+/);
+  return parts.some(p => INDIAN_NAMES.includes(p));
+}
+
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 
 // Returns 'confirmed' | 'unconfirmed' | 'not-indian'
@@ -314,7 +357,9 @@ async function searchPH(phClientId, phClientSecret) {
 
           const u = post.user;
           if (!u || seen.has(u.username)) continue;
-          // PH has no location — collect all, let match scoring sort relevance
+          // PH has no location field — filter by Indian name or India in bio/headline
+          const combined = [u.headline || '', u.websiteUrl || '', post.tagline || ''].join(' ').toLowerCase();
+          if (!hasIndianName(u.name || '') && !hasIndiaSignal('', combined, '')) continue;
           seen.add(u.username);
           const s = score(post.tagline, u.headline || '', '', 'ph', post.votesCount || 0, false);
           results.push({
