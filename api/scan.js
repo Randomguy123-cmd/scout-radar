@@ -393,40 +393,46 @@ async function searchPH(phClientId, phClientSecret) {
 async function searchReddit() {
   const results = [];
   const seen = new Set();
-  const subs = ['IndiaTech', 'IndianStartups', 'SideProject'];
-  const queries = ['built OR launched OR building', 'startup founder', 'I built', 'Show HN'];
+  // Fetch new + hot for India-focused subs; SideProject for broader builder signal
+  const feeds = [
+    { sub: 'IndiaTech',       sort: 'new',  india: true  },
+    { sub: 'IndiaTech',       sort: 'hot',  india: true  },
+    { sub: 'IndianStartups',  sort: 'new',  india: true  },
+    { sub: 'IndianStartups',  sort: 'hot',  india: true  },
+    { sub: 'SideProject',     sort: 'new',  india: false },
+  ];
+  const builderRe = /\b(built|launched|building|founder|startup|i made|side project|saas|product|shipping|stealth)\b/;
 
-  for (const sub of subs) {
-    for (const q of queries) {
-      try {
-        const url = `https://www.reddit.com/r/${sub}/search.json?q=${encodeURIComponent(q)}&sort=new&limit=50&restrict_sr=1&t=year`;
-        const resp = await fetch(url, { headers: { 'User-Agent': 'ScoutRadar/1.0 (scout tool)' } });
-        if (!resp.ok) continue;
-        const data = await resp.json();
-        for (const post of (data.data?.children || [])) {
-          const p = post.data;
-          const key = p.author + ':' + sub;
-          if (seen.has(key) || p.author === '[deleted]' || p.author === 'AutoModerator') continue;
-          seen.add(key);
-          const text = (p.title + ' ' + (p.selftext || '')).toLowerCase();
-          // Only keep posts that look like builder/founder signals
-          const builderSignal = /\b(built|launched|building|founder|startup|i made|side project|saas|product|shipping|stealth)\b/.test(text);
-          if (!builderSignal) continue;
-          results.push({
-            name: p.author,
-            username: p.author,
-            bio: p.title.substring(0, 200),
-            company: '',
-            location: sub === 'IndiaTech' || sub === 'IndianStartups' ? 'India (Reddit)' : '',
-            url: `https://reddit.com/user/${p.author}`,
-            blog: p.url || '',
-            source: 'reddit',
-            score: Math.min(50 + (p.score || 0) / 10, 80),
-          });
-        }
-      } catch (e) { console.error('[Reddit] Error:', sub, q, e.message); }
-      await sleep(1000); // Reddit rate limit: 1 req/sec
-    }
+  for (const { sub, sort, india } of feeds) {
+    try {
+      const url = `https://www.reddit.com/r/${sub}/${sort}.json?limit=100&raw_json=1`;
+      const resp = await fetch(url, {
+        headers: { 'User-Agent': 'Mozilla/5.0 (compatible; ScoutRadar/1.0; +https://github.com/scout-radar)' },
+      });
+      if (!resp.ok) { console.error(`[Reddit] ${sub}/${sort} → ${resp.status}`); continue; }
+      const data = await resp.json();
+      for (const post of (data.data?.children || [])) {
+        const p = post.data;
+        if (!p.author || p.author === '[deleted]' || p.author === 'AutoModerator') continue;
+        const key = p.author + ':' + sub;
+        if (seen.has(key)) continue;
+        const text = (p.title + ' ' + (p.selftext || '')).toLowerCase();
+        if (!builderRe.test(text)) continue;
+        seen.add(key);
+        results.push({
+          name: p.author,
+          username: p.author,
+          bio: p.title.substring(0, 200),
+          company: '',
+          location: india ? 'India (Reddit)' : '',
+          url: `https://reddit.com/user/${p.author}`,
+          blog: p.url || '',
+          source: 'reddit',
+          score: Math.min(50 + (p.score || 0) / 10, 80),
+        });
+      }
+    } catch (e) { console.error('[Reddit] Error:', sub, sort, e.message); }
+    await sleep(1200); // Reddit rate limit
   }
   console.log(`[Reddit] Found ${results.length} potential founders`);
   return results;
