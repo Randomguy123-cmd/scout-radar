@@ -17,7 +17,7 @@ module.exports = async (req, res) => {
 
   do {
     const url = new URL(`https://api.airtable.com/v0/${AIRTABLE_BASE}/${AIRTABLE_TABLE}`);
-    if (statusFilter) url.searchParams.set('filterByFormula', `{Status} = "${statusFilter}"`);
+    if (statusFilter) url.searchParams.set('filterByFormula', `{Source} = "X / Twitter"`);
     url.searchParams.set('pageSize', '100');
     url.searchParams.set('sort[0][field]', 'Date Found');
     url.searchParams.set('sort[0][direction]', 'desc');
