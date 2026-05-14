@@ -422,20 +422,32 @@
         <option value="GitHub">GitHub</option>
         <option value="Hacker News">Hacker News</option>
       </select>
+      <!-- Sector -->
+      <select id="pool-sector" onchange="renderPool()" style="padding:7px 10px;border:1px solid var(--border);border-radius:7px;font-size:13px;background:var(--bg);color:var(--text);cursor:pointer;">
+        <option value="">All Sectors</option>
+        <option value="ai">AI / LLM</option>
+        <option value="saas">SaaS / B2B</option>
+        <option value="deeptech">DeepTech</option>
+        <option value="fintech">Fintech</option>
+        <option value="enterprise">Enterprise</option>
+        <option value="consumer">Consumer</option>
+      </select>
       <!-- Match filter -->
       <select id="pool-match" onchange="renderPool()" style="padding:7px 10px;border:1px solid var(--border);border-radius:7px;font-size:13px;background:var(--bg);color:var(--text);cursor:pointer;">
         <option value="">All Matches</option>
-        <option value="3">3/3 Perfect</option>
-        <option value="2">2/3+ Strong</option>
-        <option value="1">1/3+ Any</option>
+        <option value="4">4/4 Perfect</option>
+        <option value="3">3/4+ Strong</option>
+        <option value="2">2/4+ Decent</option>
+        <option value="1">1/4+ Any</option>
       </select>
     </div>
 
     <!-- Match legend -->
     <div style="display:flex;gap:16px;margin-bottom:16px;font-size:12px;color:var(--text2);">
-      <span style="display:flex;align-items:center;gap:5px;"><span style="width:10px;height:10px;border-radius:50%;background:#10B981;display:inline-block;"></span>3/3 Perfect</span>
-      <span style="display:flex;align-items:center;gap:5px;"><span style="width:10px;height:10px;border-radius:50%;background:#F59E0B;display:inline-block;"></span>2/3 Strong</span>
-      <span style="display:flex;align-items:center;gap:5px;"><span style="width:10px;height:10px;border-radius:50%;background:#9CA3AF;display:inline-block;"></span>1/3 Weak</span>
+      <span style="display:flex;align-items:center;gap:5px;"><span style="width:10px;height:10px;border-radius:50%;background:#10B981;display:inline-block;"></span>4/4 Perfect</span>
+      <span style="display:flex;align-items:center;gap:5px;"><span style="width:10px;height:10px;border-radius:50%;background:#3B82F6;display:inline-block;"></span>3/4 Strong</span>
+      <span style="display:flex;align-items:center;gap:5px;"><span style="width:10px;height:10px;border-radius:50%;background:#F59E0B;display:inline-block;"></span>2/4 Decent</span>
+      <span style="display:flex;align-items:center;gap:5px;"><span style="width:10px;height:10px;border-radius:50%;background:#9CA3AF;display:inline-block;"></span>1/4 Weak</span>
     </div>
 
     <div id="pool-loading" style="display:none;text-align:center;padding:60px 0;color:var(--text2);font-size:14px;">Loading pool…</div>
@@ -1586,34 +1598,51 @@ function openSource(src, el) {
   if (!poolRecords.length) loadPool(); else renderPool();
 }
 
+const INDIA_CITIES_MATCH = ['india','bangalore','bengaluru','mumbai','delhi','hyderabad','pune','chennai','kolkata','noida','gurgaon','gurugram','jaipur','ahmedabad','kochi','ncr','karnataka','maharashtra','telangana'];
+const INDIA_INST_MATCH   = ['iit ','iit,','iit\b','bits pilani','nit ','iim ','iisc','iiser'];
+const INDIA_CO_MATCH     = ['razorpay','flipkart','swiggy','zerodha','meesho','freshworks','zoho','phonepe','paytm','zomato','groww','lenskart','unacademy','byju','cred ','ola cab'];
+const SECTOR_KEYWORDS    = {
+  ai:         ['ai','llm','large language','generative','genai','gpt','machine learning','ml','agent','agentic','rag','foundation model','nlp','computer vision','deep learning','diffusion'],
+  saas:       ['saas','b2b','software as a service','workflow','no-code','low-code','crm','devtools','api ','developer tool','platform'],
+  deeptech:   ['robotics','robot','space','satellite','hardware','semiconductor','biotech','climate','cleantech','drone','sensor','embedded','iot','quantum','nuclear'],
+  fintech:    ['fintech','payments','banking','lending','insurance','neobank','wealth','trading','defi','crypto','blockchain'],
+  enterprise: ['enterprise','b2b','supply chain','procurement','hr tech','hr platform','erp','compliance','legal tech','data infra','data platform'],
+  consumer:   ['consumer','d2c','marketplace','e-commerce','ecommerce','social','gaming','edtech','healthtech','food','travel'],
+};
+
 function poolMatchScore(r) {
-  // Score from actual fields (not signals string — scan.js signals are sparse)
   const loc  = (r.location || '').toLowerCase();
   const bio  = ((r.bio || '') + ' ' + (r.company || '')).toLowerCase();
   const sigs = (r.signals || '').toLowerCase();
   let score = 0;
 
-  // Dimension 1: Geography — check location field directly
-  const indiaCities = ['india','bangalore','bengaluru','mumbai','delhi','hyderabad','pune','chennai','kolkata','noida','gurgaon','gurugram','jaipur','ahmedabad','kochi','ncr','karnataka','maharashtra','telangana'];
-  const indiaInstitutions = ['iit','bits pilani','nit ','iim','iisc','iiser'];
-  const indiaCompanies = ['razorpay','flipkart','ola ','swiggy','zerodha','meesho','unacademy','freshworks','zoho','cred ','phonepe','paytm','byju','zomato','nykaa','groww','lenskart'];
-  const diasporaLocs = ['san francisco','new york','london','singapore','toronto','seattle','boston','chicago','palo alto','mountain view','menlo park','bay area','nyc','sf,'];
-  const isIndiaBased = indiaCities.some(c => loc.includes(c));
-  const isIndiaOrigin = indiaInstitutions.some(k => (bio + loc).includes(k)) || indiaCompanies.some(k => bio.includes(k));
-  const isDiaspora = isIndiaOrigin && diasporaLocs.some(d => loc.includes(d)) && !isIndiaBased;
-  if (isIndiaBased || isIndiaOrigin || isDiaspora ||
-      sigs.includes('india based') || sigs.includes('india origin') || sigs.includes('diaspora') || sigs.includes('india-linked')) score++;
+  // Dim 1: Geography — India-based OR India-origin/diaspora
+  const isIndiaBased   = INDIA_CITIES_MATCH.some(c => loc.includes(c));
+  const isIndiaOrigin  = INDIA_INST_MATCH.some(k => (bio + ' ' + loc).match(new RegExp(k,'i'))) || INDIA_CO_MATCH.some(k => bio.includes(k));
+  const isDiaspora     = isIndiaOrigin && !isIndiaBased;
+  if (isIndiaBased || isIndiaOrigin || isDiaspora || sigs.includes('india') || sigs.includes('diaspora')) score++;
 
-  // Dimension 2: Activity — recently added or has product URL or active signals
-  const daysSinceAdded = r.dateFound ? (Date.now() - new Date(r.dateFound)) / 86400000 : 999;
-  if (daysSinceAdded <= 30 || bio.includes('http') || r.companyUrl ||
-      sigs.includes('active') || sigs.includes('has product url')) score++;
+  // Dim 2: Activity — added recently, has product URL, or explicit active signal
+  const daysSince = r.dateFound ? (Date.now() - new Date(r.dateFound)) / 86400000 : 999;
+  if (daysSince <= 30 || r.companyUrl || r.url || sigs.includes('active') || sigs.includes('product url')) score++;
 
-  // Dimension 3: Founder Type — check bio directly
-  if (bio.match(/\b(founder|co-?founder|ceo|cto|building|stealth|launching)\b/) ||
-      sigs.includes('founder') || sigs.includes('ceo') || sigs.includes('cto') || sigs.includes('building')) score++;
+  // Dim 3: Founder identity — bio keywords
+  if (bio.match(/\b(founder|co-?founder|ceo|cto|building|stealth|launching|indie hacker|bootstrapped)\b/) ||
+      sigs.match(/founder|ceo|cto|building/)) score++;
+
+  // Dim 4: Sector fit — AI / SaaS / DeepTech / Fintech / Enterprise / Consumer
+  const hasSector = Object.values(SECTOR_KEYWORDS).some(kws => kws.some(k => bio.includes(k)));
+  if (hasSector) score++;
 
   return score;
+}
+
+function detectSector(r) {
+  const bio = ((r.bio || '') + ' ' + (r.company || '')).toLowerCase();
+  for (const [sector, kws] of Object.entries(SECTOR_KEYWORDS)) {
+    if (kws.some(k => bio.includes(k))) return sector;
+  }
+  return '';
 }
 
 async function loadPool() {
@@ -1649,20 +1678,50 @@ async function loadPool() {
 }
 
 function renderPool() {
-  const q      = (document.getElementById('pool-search').value || '').toLowerCase();
-  const geo    = document.getElementById('pool-geo').value;
-  const act    = document.getElementById('pool-activity').value;
-  const fnd    = document.getElementById('pool-founder').value;
-  const src    = document.getElementById('pool-source').value;
+  const q        = (document.getElementById('pool-search').value || '').toLowerCase();
+  const geo      = document.getElementById('pool-geo').value;
+  const act      = document.getElementById('pool-activity').value;
+  const fnd      = document.getElementById('pool-founder').value;
+  const src      = document.getElementById('pool-source').value;
+  const sector   = document.getElementById('pool-sector').value;
   const minMatch = parseInt(document.getElementById('pool-match').value) || 0;
 
   const filtered = poolRecords.filter(r => {
     const sigs = (r.signals || '').toLowerCase();
-    if (geo    && !sigs.includes(geo))    return false;
-    if (act    && !sigs.includes(act))    return false;
-    if (fnd    && !sigs.includes(fnd))    return false;
-    if (src    && (r.source || '').toLowerCase() !== src.toLowerCase()) return false;
+    const bio  = ((r.bio || '') + ' ' + (r.company || '')).toLowerCase();
+    const loc  = (r.location || '').toLowerCase();
+
+    // Geography filter — check against bio/location directly, not just signals
+    if (geo) {
+      const geoMap = {
+        'india based':        () => INDIA_CITIES_MATCH.some(c => loc.includes(c)),
+        'india origin · edu': () => INDIA_INST_MATCH.some(k => (bio + loc).match(new RegExp(k,'i'))),
+        'india origin · work':() => INDIA_CO_MATCH.some(k => bio.includes(k)),
+        'diaspora':           () => { const based = INDIA_CITIES_MATCH.some(c => loc.includes(c)); const origin = INDIA_INST_MATCH.some(k => (bio+loc).match(new RegExp(k,'i'))) || INDIA_CO_MATCH.some(k => bio.includes(k)); return origin && !based; },
+      };
+      const check = geoMap[geo];
+      if (check && !check() && !sigs.includes(geo)) return false;
+    }
+
+    // Activity filter
+    if (act && !sigs.includes(act)) return false;
+
+    // Founder type — check bio directly too
+    if (fnd && !sigs.includes(fnd) && !bio.match(new RegExp('\\b'+fnd+'\\b','i'))) return false;
+
+    // Source
+    if (src && (r.source || '').toLowerCase() !== src.toLowerCase()) return false;
+
+    // Sector filter — check bio keywords
+    if (sector) {
+      const kws = SECTOR_KEYWORDS[sector] || [];
+      if (!kws.some(k => bio.includes(k))) return false;
+    }
+
+    // Match score
     if (minMatch && r.matchScore < minMatch) return false;
+
+    // Free text search across all fields
     if (q) {
       const hay = [r.name, r.bio, r.company, r.signals, r.location].join(' ').toLowerCase();
       if (!hay.includes(q)) return false;
@@ -1679,8 +1738,8 @@ function renderPool() {
   }
   document.getElementById('pool-empty').style.display = 'none';
 
-  const matchColor = { 3: '#10B981', 2: '#F59E0B', 1: '#9CA3AF', 0: '#E5E7EB' };
-  const matchLabel = { 3: '3/3 Perfect', 2: '2/3 Strong', 1: '1/3 Weak', 0: '0/3' };
+  const matchColor = { 4: '#10B981', 3: '#3B82F6', 2: '#F59E0B', 1: '#9CA3AF', 0: '#E5E7EB' };
+  const matchLabel = { 4: '4/4 Perfect', 3: '3/4 Strong', 2: '2/4 Decent', 1: '1/4 Weak', 0: '0/4' };
 
   document.getElementById('pool-grid').innerHTML = filtered.map(r => {
     const mc   = matchColor[r.matchScore] || '#E5E7EB';
@@ -1902,19 +1961,18 @@ async function pushAllToAirtable() {
 }
 
 function exportPoolCSV() {
-  // Export the currently visible filtered pool records
-  const q      = (document.getElementById('pool-search').value || '').toLowerCase();
-  const geo    = document.getElementById('pool-geo').value;
-  const act    = document.getElementById('pool-activity').value;
-  const fnd    = document.getElementById('pool-founder').value;
-  const src    = document.getElementById('pool-source').value;
+  // Re-use renderPool's filter logic snapshot
+  const q        = (document.getElementById('pool-search').value || '').toLowerCase();
+  const src      = document.getElementById('pool-source').value;
+  const sector   = document.getElementById('pool-sector').value;
+  const act      = document.getElementById('pool-activity').value;
   const minMatch = parseInt(document.getElementById('pool-match').value) || 0;
   const rows = poolRecords.filter(r => {
     const sigs = (r.signals || '').toLowerCase();
-    if (geo && !sigs.includes(geo)) return false;
+    const bio  = ((r.bio || '') + ' ' + (r.company || '')).toLowerCase();
     if (act && !sigs.includes(act)) return false;
-    if (fnd && !sigs.includes(fnd)) return false;
     if (src && (r.source || '').toLowerCase() !== src.toLowerCase()) return false;
+    if (sector) { const kws = SECTOR_KEYWORDS[sector] || []; if (!kws.some(k => bio.includes(k))) return false; }
     if (minMatch && r.matchScore < minMatch) return false;
     if (q) { const hay = [r.name, r.bio, r.company, r.signals, r.location].join(' ').toLowerCase(); if (!hay.includes(q)) return false; }
     return true;
