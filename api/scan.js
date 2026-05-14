@@ -1,8 +1,8 @@
 // Daily scout scan — runs via Vercel Cron at 8am IST (2:30am UTC)
 // Searches GitHub + HN, filters by India signal + builder signal, pushes to Airtable.
 
-const AIRTABLE_BASE  = 'appwiWdsmAvz62CTK';
-const AIRTABLE_TABLE = 'tblW6mU9xd0BKTdLL';
+const AIRTABLE_BASE  = 'appoVW6cJXYYhHKnU';
+const AIRTABLE_TABLE = 'tblw5OF9akHaMtH38';
 
 // Airtable field IDs
 const F = {
