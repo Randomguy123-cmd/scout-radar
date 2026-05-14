@@ -390,77 +390,45 @@ async function searchPH(phClientId, phClientSecret) {
   return results;
 }
 
-async function getRedditToken(clientId, clientSecret) {
-  const creds = Buffer.from(`${clientId}:${clientSecret}`).toString('base64');
-  const resp = await fetch('https://www.reddit.com/api/v1/access_token', {
-    method: 'POST',
-    headers: {
-      Authorization: `Basic ${creds}`,
-      'User-Agent': 'ScoutRadar/1.0 by ScoutRadarBot',
-      'Content-Type': 'application/x-www-form-urlencoded',
-    },
-    body: 'grant_type=client_credentials',
-  });
-  if (!resp.ok) throw new Error(`Reddit token failed: ${resp.status}`);
-  const data = await resp.json();
-  return data.access_token;
-}
-
-async function searchReddit(clientId, clientSecret) {
+async function searchDevTo() {
   const results = [];
   const seen = new Set();
-  const feeds = [
-    { sub: 'IndiaTech',      sort: 'new', india: true  },
-    { sub: 'IndiaTech',      sort: 'hot', india: true  },
-    { sub: 'IndianStartups', sort: 'new', india: true  },
-    { sub: 'IndianStartups', sort: 'hot', india: true  },
-    { sub: 'SideProject',    sort: 'new', india: false },
-  ];
-  const builderRe = /\b(built|launched|building|founder|startup|i made|side project|saas|product|shipping|stealth)\b/;
+  // Tags that surface builders/founders; 'india' catches India-specific posts
+  const tags = ['showdev', 'india', 'indiehackers', 'startup', 'saas'];
+  const builderRe = /\b(built|launched|building|founder|startup|i made|side project|saas|product|shipping|indie)\b/;
 
-  let token;
-  try {
-    token = await getRedditToken(clientId, clientSecret);
-  } catch (e) {
-    console.error('[Reddit] Auth failed:', e.message);
-    return results;
-  }
-
-  const headers = {
-    Authorization: `Bearer ${token}`,
-    'User-Agent': 'ScoutRadar/1.0 by ScoutRadarBot',
-  };
-
-  for (const { sub, sort, india } of feeds) {
+  for (const tag of tags) {
     try {
-      const url = `https://oauth.reddit.com/r/${sub}/${sort}.json?limit=100&raw_json=1`;
-      const resp = await fetch(url, { headers });
-      if (!resp.ok) { console.error(`[Reddit] ${sub}/${sort} → ${resp.status}`); continue; }
-      const data = await resp.json();
-      for (const post of (data.data?.children || [])) {
-        const p = post.data;
-        if (!p.author || p.author === '[deleted]' || p.author === 'AutoModerator') continue;
-        const key = p.author + ':' + sub;
-        if (seen.has(key)) continue;
-        const text = (p.title + ' ' + (p.selftext || '')).toLowerCase();
-        if (!builderRe.test(text)) continue;
-        seen.add(key);
+      const url = `https://dev.to/api/articles?tag=${tag}&per_page=100&top=30`;
+      const resp = await fetch(url, { headers: { 'User-Agent': 'ScoutRadar/1.0' } });
+      if (!resp.ok) { console.error(`[DevTo] tag=${tag} → ${resp.status}`); continue; }
+      const posts = await resp.json();
+      for (const post of posts) {
+        const u = post.user || {};
+        const username = u.username;
+        if (!username || seen.has(username)) continue;
+        const text = (post.title + ' ' + (post.description || '')).toLowerCase();
+        const loc = (u.location || '').toLowerCase();
+        // Keep if India signal OR Indian name OR builder signal in title
+        const indiaSignal = hasIndiaSignal('', loc, '') || hasIndianName(u.name || '');
+        if (!indiaSignal && !builderRe.test(text)) continue;
+        seen.add(username);
         results.push({
-          name: p.author,
-          username: p.author,
-          bio: p.title.substring(0, 200),
+          name: u.name || username,
+          username,
+          bio: post.title.substring(0, 200),
           company: '',
-          location: india ? 'India (Reddit)' : '',
-          url: `https://reddit.com/user/${p.author}`,
-          blog: p.url || '',
-          source: 'reddit',
-          score: Math.min(50 + (p.score || 0) / 10, 80),
+          location: u.location || '',
+          url: `https://dev.to/${username}`,
+          blog: u.website_url || '',
+          source: 'devto',
+          score: Math.min(50 + (post.public_reactions_count || 0) / 5, 85),
         });
       }
-    } catch (e) { console.error('[Reddit] Error:', sub, sort, e.message); }
-    await sleep(1000);
+    } catch (e) { console.error('[DevTo] Error:', tag, e.message); }
+    await sleep(500);
   }
-  console.log(`[Reddit] Found ${results.length} potential founders`);
+  console.log(`[DevTo] Found ${results.length} potential founders`);
   return results;
 }
 
@@ -524,7 +492,7 @@ async function searchGitHubTrending(ghToken) {
 }
 
 async function pushToAirtable(founders, atToken) {
-  const sourceMap = { github: 'GitHub', hn: 'Hacker News', ph: 'Product Hunt', reddit: 'Reddit', 'github-trending': 'GitHub Trending' };
+  const sourceMap = { github: 'GitHub', hn: 'Hacker News', ph: 'Product Hunt', devto: 'Dev.to', 'github-trending': 'GitHub Trending' };
   let created = 0;
   const today = new Date().toISOString().split('T')[0];
 
@@ -571,8 +539,6 @@ module.exports = async (req, res) => {
   const atToken       = process.env.AIRTABLE_TOKEN;
   const phClientId    = process.env.PH_CLIENT_ID;
   const phSecret      = process.env.PH_CLIENT_SECRET;
-  const redditId      = process.env.REDDIT_CLIENT_ID;
-  const redditSecret  = process.env.REDDIT_CLIENT_SECRET;
   if (!atToken) return res.status(500).json({ error: 'AIRTABLE_TOKEN not set' });
 
   const startTime = Date.now();
@@ -586,7 +552,7 @@ module.exports = async (req, res) => {
       ghToken ? searchGitHub(ghToken) : (console.log('[scan] No GITHUB_TOKEN — skipping GitHub'), Promise.resolve([])),
       searchHN(),
       (phClientId && phSecret) ? searchPH(phClientId, phSecret) : (console.log('[scan] No PH credentials — skipping Product Hunt'), Promise.resolve([])),
-      (redditId && redditSecret) ? searchReddit(redditId, redditSecret) : (console.log('[scan] No Reddit credentials — skipping Reddit'), Promise.resolve([])),
+      searchDevTo(),
       ghToken ? searchGitHubTrending(ghToken) : Promise.resolve([]),
     ]);
 
