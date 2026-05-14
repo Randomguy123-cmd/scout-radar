@@ -251,6 +251,11 @@
       <span>Dashboard</span>
       <span class="nav-count" id="nav-master-count">—</span>
     </a></li>
+    <li><a data-source="inbox" onclick="openInbox(this)">
+      <span class="nav-icon"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M2 2h12v9H2zM2 11l4 3h4l4-3" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><circle cx="8" cy="6.5" r="1.5" stroke="currentColor" stroke-width="1.3"/></svg></span>
+      <span>X Profiles</span>
+      <span class="nav-count" id="nav-inbox-count">—</span>
+    </a></li>
     <li><a class="active" data-source="pool" onclick="openPool(this)">
       <span class="nav-icon"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="5" r="3.5" stroke="currentColor" stroke-width="1.5"/><path d="M2 13c0-2.5 2.686-4.5 6-4.5s6 2 6 4.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></span>
       <span>Pool</span>
@@ -280,15 +285,6 @@
       <span class="nav-icon"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><polyline points="1,13 5,7 8,10 11,5 15,3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
       <span>Trending</span>
       <span class="nav-count" id="nav-trending-count">—</span>
-    </a></li>
-  </ul>
-
-  <div class="sidebar-section-label">Pipeline</div>
-  <ul class="sidebar-nav" id="sidebar-nav-db">
-    <li><a data-source="inbox" onclick="openInbox(this)">
-      <span class="nav-icon"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M2.5 1h11L15 5v1H1V5L2.5 1zM1 6h14v8a1 1 0 01-1 1H2a1 1 0 01-1-1V6z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><path d="M5 9h6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></span>
-      <span>X Profiles</span>
-      <span class="nav-count" id="nav-inbox-count">—</span>
     </a></li>
   </ul>
 
@@ -1968,24 +1964,31 @@ async function loadInbox() {
 
 function renderInboxCards() {
   const grid = document.getElementById('inbox-grid');
+  const HIDDEN_TAGS = new Set(['confirmed','unconfirmed','not-indian','india-linked','ai']);
   grid.innerHTML = inboxRecords.map(r => {
-    const scoreClass = r.score >= 50 ? 'score-high' : r.score >= 25 ? 'score-med' : 'score-low';
-    const sel = inboxSelected.has(r.airtableId);
-    return `<div class="card ${scoreClass}" data-id="${r.airtableId}" style="cursor:pointer;${sel?'outline:2px solid var(--primary);outline-offset:2px;':''}" onclick="toggleInboxSelect('${r.airtableId}',this)">
-      <div class="card-top">
-        <div class="card-identity">
-          <h3>${esc(r.name)}${sel?' <span class="new-badge">✓</span>':''}</h3>
-          <div class="username">@${esc(r.url.split('/').pop()||r.name)}</div>
-        </div>
-        <span class="card-source-badge badge-manual">X</span>
+    const sel  = inboxSelected.has(r.airtableId);
+    const bio  = (r.bio || '').substring(0, 200);
+    const tags = (r.signals || '').split(',').map(s => s.trim()).filter(s => s && !HIDDEN_TAGS.has(s.toLowerCase())).slice(0, 5);
+    // Build X profile URL from stored URL (profile), fallback to username
+    const profileUrl = r.url || '#';
+    const username   = profileUrl.replace('https://x.com/','').replace('https://twitter.com/','').split('/')[0] || r.name;
+    return `<div class="card" data-id="${r.airtableId}" style="position:relative;cursor:pointer;${sel?'outline:2px solid var(--primary);outline-offset:2px;':''}" onclick="toggleInboxSelect('${r.airtableId}',this)">
+      <div style="position:absolute;top:12px;right:12px;">
+        ${sel ? `<span style="font-size:11px;font-weight:700;color:var(--primary);background:var(--blue-light);padding:2px 7px;border-radius:10px;">&#10003; Selected</span>` : '<span style="font-size:11px;color:var(--text3);">X</span>'}
       </div>
-      ${r.company?`<div class="card-company">${esc(r.company)}</div>`:''}
-      <div class="card-bio">${esc((r.bio||'').substring(0,250))}</div>
-      <div class="signal-tags"><span class="signal-tag tag-ai">AI</span>${r.location?`<span class="signal-tag tag-shipped">India</span>`:''}</div>
+      <div class="card-top" style="padding-right:80px;">
+        <div class="card-identity">
+          <h3>${esc(r.name || username)}</h3>
+          <div class="username">@${esc(username)}</div>
+          ${r.company ? `<div class="card-company">${esc(r.company)}</div>` : ''}
+        </div>
+      </div>
+      ${bio ? `<div class="card-bio">${esc(bio)}</div>` : ''}
+      ${tags.length ? `<div class="signal-tags">${tags.map(t=>`<span class="signal-tag">${esc(t)}</span>`).join('')}</div>` : ''}
       <div class="card-bottom">
-        <span class="card-location">${r.location?'<svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M6 1C4.067 1 2.5 2.567 2.5 4.5C2.5 7.25 6 11 6 11s3.5-3.75 3.5-6.5C9.5 2.567 7.933 1 6 1z" stroke="currentColor" stroke-width="1.2"/><circle cx="6" cy="4.5" r="1.2" stroke="currentColor" stroke-width="1.2"/></svg> '+esc(r.location):''}</span>
-        <div style="display:flex;gap:10px;align-items:center;">
-          ${r.url?`<a class="card-link" href="${esc(r.url)}" target="_blank" onclick="event.stopPropagation()">View</a>`:''}
+        <span class="card-location">${r.location ? `<svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M6 1C4.067 1 2.5 2.567 2.5 4.5C2.5 7.25 6 11 6 11s3.5-3.75 3.5-6.5C9.5 2.567 7.933 1 6 1z" stroke="currentColor" stroke-width="1.2"/><circle cx="6" cy="4.5" r="1.2" stroke="currentColor" stroke-width="1.2"/></svg> ${esc(r.location)}` : ''}</span>
+        <div style="display:flex;gap:8px;align-items:center;" onclick="event.stopPropagation()">
+          ${profileUrl !== '#' ? `<a class="card-link" href="https://x.com/${esc(username)}" target="_blank">Profile</a>` : ''}
         </div>
       </div>
     </div>`;
@@ -2012,34 +2015,25 @@ async function pushSelectedInbox() {
   btn.disabled = true;
   btn.textContent = 'Pushing…';
 
-  const toUpdate = inboxRecords.filter(r => inboxSelected.has(r.airtableId));
-  const airtableToken = localStorage.getItem('airtable_token');
-
-  if (!airtableToken) {
-    alert('Add your Airtable token in Settings first.');
-    btn.disabled = false;
-    updateInboxPushBtn();
-    return;
-  }
-
-  // Update status from "Inbox" to "New" for selected records
-  const BASE = 'appwiWdsmAvz62CTK';
-  const TABLE = 'tblW6mU9xd0BKTdLL';
-  const STATUS_FIELD = 'fldfSW7ViqWivnBzS';
-  let ok = 0;
-
-  for (let i = 0; i < toUpdate.length; i += 10) {
-    const batch = toUpdate.slice(i, i+10).map(r => ({ id: r.airtableId, fields: { [STATUS_FIELD]: 'New' } }));
-    const resp = await fetch(`https://api.airtable.com/v0/${BASE}/${TABLE}`, {
-      method: 'PATCH',
-      headers: { Authorization: `Bearer ${airtableToken}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ records: batch }),
+  const toSend = inboxRecords.filter(r => inboxSelected.has(r.airtableId));
+  try {
+    const resp = await fetch('/api/shortlist', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ records: toSend }),
     });
-    if (resp.ok) { const d = await resp.json(); ok += d.records.length; }
-  }
+    const data = await resp.json();
+    if (data.success) {
+      showToast(`${data.created} profile${data.created !== 1 ? 's' : ''} added to Shortlist`);
+      inboxSelected.clear();
+      renderInboxCards();
+    } else {
+      showToast('Error: ' + (data.error || 'Failed'));
+    }
+  } catch(e) { showToast('Network error'); }
 
-  alert(`${ok} founder${ok!==1?'s':''} moved to Airtable (status: New).`);
-  loadInbox();
+  btn.disabled = false;
+  updateInboxPushBtn();
 }
 function filterText(q){currentQuery=q;applyFilters();}
 function sortBy(f){if(sortField===f)sortDir*=-1;else{sortField=f;sortDir=-1;}applyFilters();}
