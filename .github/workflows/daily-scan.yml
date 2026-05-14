@@ -22,4 +22,6 @@ jobs:
           GH_SCAN_TOKEN: ${{ secrets.GH_TOKEN }}
           AIRTABLE_TOKEN: ${{ secrets.AIRTABLE_TOKEN }}
           CRON_SECRET: ${{ secrets.CRON_JOB }}
+          PH_CLIENT_ID: ${{ secrets.PH_CLIENT_ID }}
+          PH_CLIENT_SECRET: ${{ secrets.PH_CLIENT_SECRET }}
         run: node scripts/run-scan.js
