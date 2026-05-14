@@ -421,6 +421,15 @@
         <option value="">All Sources</option>
         <option value="GitHub">GitHub</option>
         <option value="Hacker News">Hacker News</option>
+        <option value="Product Hunt">Product Hunt</option>
+        <option value="Reddit">Reddit</option>
+      </select>
+      <!-- India status -->
+      <select id="pool-india" onchange="renderPool()" style="padding:7px 10px;border:1px solid var(--border);border-radius:7px;font-size:13px;background:var(--bg);color:var(--text);cursor:pointer;">
+        <option value="">All Origins</option>
+        <option value="confirmed">Confirmed Indian</option>
+        <option value="unconfirmed">Unconfirmed</option>
+        <option value="not-indian">Not Indian</option>
       </select>
       <!-- Sector -->
       <select id="pool-sector" onchange="renderPool()" style="padding:7px 10px;border:1px solid var(--border);border-radius:7px;font-size:13px;background:var(--bg);color:var(--text);cursor:pointer;">
@@ -1677,6 +1686,7 @@ function renderPool() {
   const act      = document.getElementById('pool-activity').value;
   const fnd      = document.getElementById('pool-founder').value;
   const src      = document.getElementById('pool-source').value;
+  const india    = document.getElementById('pool-india').value;
   const sector   = document.getElementById('pool-sector').value;
   const minMatch = parseInt(document.getElementById('pool-match').value) || 0;
 
@@ -1684,6 +1694,19 @@ function renderPool() {
     const sigs = (r.signals || '').toLowerCase();
     const bio  = ((r.bio || '') + ' ' + (r.company || '')).toLowerCase();
     const loc  = (r.location || '').toLowerCase();
+
+    // India status filter — check signals field for confirmed/unconfirmed/not-indian
+    if (india) {
+      const status = sigs.includes('confirmed') ? 'confirmed'
+                   : sigs.includes('unconfirmed') ? 'unconfirmed'
+                   : sigs.includes('not-indian') ? 'not-indian'
+                   : INDIA_CITIES_MATCH.some(c => loc.includes(c)) ? 'confirmed'
+                   : INDIA_INST_MATCH.some(k => (bio+loc).match(new RegExp(k,'i'))) ? 'confirmed'
+                   : INDIA_CO_MATCH.some(k => bio.includes(k)) ? 'unconfirmed'
+                   : (bio+loc).includes('india') ? 'unconfirmed'
+                   : 'not-indian';
+      if (status !== india) return false;
+    }
 
     // Geography filter — check against bio/location directly, not just signals
     if (geo) {
