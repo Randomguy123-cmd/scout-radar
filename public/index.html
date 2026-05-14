@@ -1587,14 +1587,32 @@ function openSource(src, el) {
 }
 
 function poolMatchScore(r) {
+  // Score from actual fields (not signals string — scan.js signals are sparse)
+  const loc  = (r.location || '').toLowerCase();
+  const bio  = ((r.bio || '') + ' ' + (r.company || '')).toLowerCase();
   const sigs = (r.signals || '').toLowerCase();
   let score = 0;
-  // Dimension 1: Geography
-  if (sigs.includes('india based') || sigs.includes('india origin') || sigs.includes('diaspora')) score++;
-  // Dimension 2: Activity
-  if (sigs.includes('active · last 14d') || sigs.includes('active · last 30d') || sigs.includes('has product url')) score++;
-  // Dimension 3: Founder Type
-  if (sigs.includes('founder') || sigs.includes('ceo') || sigs.includes('cto') || sigs.includes('building')) score++;
+
+  // Dimension 1: Geography — check location field directly
+  const indiaCities = ['india','bangalore','bengaluru','mumbai','delhi','hyderabad','pune','chennai','kolkata','noida','gurgaon','gurugram','jaipur','ahmedabad','kochi','ncr','karnataka','maharashtra','telangana'];
+  const indiaInstitutions = ['iit','bits pilani','nit ','iim','iisc','iiser'];
+  const indiaCompanies = ['razorpay','flipkart','ola ','swiggy','zerodha','meesho','unacademy','freshworks','zoho','cred ','phonepe','paytm','byju','zomato','nykaa','groww','lenskart'];
+  const diasporaLocs = ['san francisco','new york','london','singapore','toronto','seattle','boston','chicago','palo alto','mountain view','menlo park','bay area','nyc','sf,'];
+  const isIndiaBased = indiaCities.some(c => loc.includes(c));
+  const isIndiaOrigin = indiaInstitutions.some(k => (bio + loc).includes(k)) || indiaCompanies.some(k => bio.includes(k));
+  const isDiaspora = isIndiaOrigin && diasporaLocs.some(d => loc.includes(d)) && !isIndiaBased;
+  if (isIndiaBased || isIndiaOrigin || isDiaspora ||
+      sigs.includes('india based') || sigs.includes('india origin') || sigs.includes('diaspora') || sigs.includes('india-linked')) score++;
+
+  // Dimension 2: Activity — recently added or has product URL or active signals
+  const daysSinceAdded = r.dateFound ? (Date.now() - new Date(r.dateFound)) / 86400000 : 999;
+  if (daysSinceAdded <= 30 || bio.includes('http') || r.companyUrl ||
+      sigs.includes('active') || sigs.includes('has product url')) score++;
+
+  // Dimension 3: Founder Type — check bio directly
+  if (bio.match(/\b(founder|co-?founder|ceo|cto|building|stealth|launching)\b/) ||
+      sigs.includes('founder') || sigs.includes('ceo') || sigs.includes('cto') || sigs.includes('building')) score++;
+
   return score;
 }
 
