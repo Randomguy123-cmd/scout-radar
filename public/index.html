@@ -432,6 +432,10 @@
         <option value="enterprise">Enterprise</option>
         <option value="consumer">Consumer</option>
       </select>
+      <!-- Keyword -->
+      <div style="position:relative;">
+        <input id="pool-keyword" type="text" placeholder="Keyword: legal tech, robotics…" oninput="renderPool()" style="padding:7px 12px;border:1px solid var(--border);border-radius:7px;font-size:13px;background:var(--bg);color:var(--text);outline:none;width:180px;">
+      </div>
       <!-- Match filter -->
       <select id="pool-match" onchange="renderPool()" style="padding:7px 10px;border:1px solid var(--border);border-radius:7px;font-size:13px;background:var(--bg);color:var(--text);cursor:pointer;">
         <option value="">All Matches</option>
@@ -1678,6 +1682,7 @@ function renderPool() {
   const fnd      = document.getElementById('pool-founder').value;
   const src      = document.getElementById('pool-source').value;
   const sector   = document.getElementById('pool-sector').value;
+  const keyword  = (document.getElementById('pool-keyword').value || '').toLowerCase().trim();
   const minMatch = parseInt(document.getElementById('pool-match').value) || 0;
 
   const filtered = poolRecords.filter(r => {
@@ -1711,6 +1716,9 @@ function renderPool() {
       const kws = SECTOR_KEYWORDS[sector] || [];
       if (!kws.some(k => bio.includes(k))) return false;
     }
+
+    // Keyword filter — searches bio + company directly
+    if (keyword && !bio.includes(keyword)) return false;
 
     // Match score
     if (minMatch && r.matchScore < minMatch) return false;
