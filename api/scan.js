@@ -294,8 +294,9 @@ async function searchGitHub(ghToken) {
         { headers }
       );
       if (resp.status === 429 || resp.status === 403) { await sleep(60000); continue; }
-      if (!resp.ok) continue;
+      if (!resp.ok) { console.log(`[scan] Repo query failed ${resp.status}: ${q}`); continue; }
       const data = await resp.json();
+      console.log(`[scan] Repo query "${q}" → ${(data.items||[]).length} results`);
 
       const owners = (data.items || [])
         .map(r => ({ login: r.owner?.login, blog: r.homepage || '', desc: r.description || '' }))
