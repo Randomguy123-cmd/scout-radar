@@ -266,10 +266,10 @@
       <span>Product Hunt</span>
       <span class="nav-count" id="nav-ph-count">—</span>
     </a></li>
-    <li><a data-source="reddit" onclick="openSource('Reddit',this)">
-      <span class="nav-icon"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="9" r="5" stroke="currentColor" stroke-width="1.5"/><circle cx="11.5" cy="3.5" r="1" fill="currentColor"/><path d="M8 3.5c1.2 0 2.3.3 3 .8" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/><circle cx="6.2" cy="9" r=".8" fill="currentColor"/><circle cx="9.8" cy="9" r=".8" fill="currentColor"/><path d="M6 11c.5.7 1.2 1 2 1s1.5-.3 2-1" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg></span>
-      <span>Reddit</span>
-      <span class="nav-count" id="nav-reddit-count">—</span>
+    <li><a data-source="devto" onclick="openSource('Dev.to',this)">
+      <span class="nav-icon"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><rect x="1" y="4" width="14" height="8" rx="2" stroke="currentColor" stroke-width="1.5"/><path d="M4 8h2.5a1.5 1.5 0 010 3H4V5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/><path d="M10 5v6M10 5h1.5a2 2 0 010 4H10" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+      <span>Dev.to</span>
+      <span class="nav-count" id="nav-devto-count">—</span>
     </a></li>
     <li><a data-source="trending" onclick="openSource('GitHub Trending',this)">
       <span class="nav-icon"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><polyline points="1,13 5,7 8,10 11,5 15,3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
@@ -433,7 +433,7 @@
         <option value="GitHub Trending">GitHub Trending</option>
         <option value="Hacker News">Hacker News</option>
         <option value="Product Hunt">Product Hunt</option>
-        <option value="Reddit">Reddit</option>
+        <option value="Dev.to">Dev.to</option>
       </select>
       <!-- India status -->
       <select id="pool-india" onchange="renderPool()" style="padding:7px 10px;border:1px solid var(--border);border-radius:7px;font-size:13px;background:var(--bg);color:var(--text);cursor:pointer;">
@@ -1677,14 +1677,14 @@ async function loadPool() {
     const ghCount      = poolRecords.filter(r => r.source === 'GitHub').length;
     const hnCount      = poolRecords.filter(r => r.source === 'Hacker News').length;
     const phCount      = poolRecords.filter(r => r.source === 'Product Hunt').length;
-    const redditCount  = poolRecords.filter(r => r.source === 'Reddit').length;
+    const devtoCount   = poolRecords.filter(r => r.source === 'Dev.to').length;
     const trendingCount= poolRecords.filter(r => r.source === 'GitHub Trending').length;
     document.getElementById('pool-total').textContent = `${poolRecords.length} profiles`;
     document.getElementById('nav-pool-count').textContent = poolRecords.length;
     document.getElementById('nav-gh-count').textContent = ghCount;
     document.getElementById('nav-hn-count').textContent = hnCount;
     document.getElementById('nav-ph-count').textContent = phCount;
-    document.getElementById('nav-reddit-count').textContent = redditCount;
+    document.getElementById('nav-devto-count').textContent = devtoCount;
     document.getElementById('nav-trending-count').textContent = trendingCount;
 
     renderPool();
